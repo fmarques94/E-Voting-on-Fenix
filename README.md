@@ -1,0 +1,2 @@
+# E-Voting-on-Fenix
+Thesis project which aims to introduce e-voting to IST community. For this an implementation of a variant of the Helios-C voting scheme is going to be implemented with authentication done using Oauth2 mechanism provided by the Fenix system. The e-voting scheme will be composed of a backend written in Python and a frontend in HTML, CSS and Javascript also with the use of JQuery.
