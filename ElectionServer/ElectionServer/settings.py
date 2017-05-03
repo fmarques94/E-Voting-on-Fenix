@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    #'social_django',
 ]
 
 MIDDLEWARE = [
@@ -98,6 +99,8 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+#AUTHENTICATION_BACKENDS = ('social_core.backends.google.GoogleOAuth2',)
 
 
 # Internationalization
