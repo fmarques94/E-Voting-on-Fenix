@@ -52,7 +52,9 @@ MIDDLEWARE = [
     'social_django.middleware.SocialAuthExceptionMiddleware',
 ]
 
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 AUTH_USER_MODEL = 'ElectionServer.FenixUser'
+SOCIAL_AUTH_ALWAYS_ASSOCIATE = True
 
 ROOT_URLCONF = 'VotingSite.urls'
 
@@ -116,6 +118,7 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.auth_allowed',
     'social_core.pipeline.social_auth.social_user',
     'social_core.pipeline.user.get_username',
+    'VotingSite.CustomPipeline.printSomething',
     'social_core.pipeline.user.create_user',
     'VotingSite.CustomPipeline.save_profile',
     'social_core.pipeline.social_auth.associate_user',
@@ -124,8 +127,9 @@ SOCIAL_AUTH_PIPELINE = (
 )
 
 
+
 LOGIN_URL = 'login'
-#LOGOUT_URL = 'logout'
+LOGOUT_URL = 'logout'
 LOGIN_REDIRECT_URL = 'home'
 
 SOCIAL_AUTH_FENIX_KEY = '288540197912617'

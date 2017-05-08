@@ -11,12 +11,19 @@ class FenixOAuth2(BaseOAuth2):
     STATE_PARAMETER = False
     ACCESS_TOKEN_METHOD = 'POST'
     SCOPE_SEPARATOR = ','
+    EXTRA_DATA = [
+        ('id', 'id'),
+        ('expires', 'expires')
+    ]
 
     def get_user_details(self, response):
         """Return user details from Fenix account"""
         return {'username': response.get('username'),
                 'email': response.get('email'),
                 'full_name': response.get('name')}
+
+    def get_user_id(self,details,response):
+        return response.get('username')
 
     def user_data(self, access_token, *args, **kwargs):
         """Loads user data from service"""
