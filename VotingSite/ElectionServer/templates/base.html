@@ -1,0 +1,49 @@
+<html>
+    <head>
+        {% load static %}
+        <link rel="stylesheet" type="text/css" href="{% static 'style/base.css' %}" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        {% block extra_head_block %}
+        {% endblock %}
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <img class="logo" src="logo src goes here" alt="logo.png"/>
+                <div class="socialOut">
+                    <div class="socialIn">
+                    {%if user.name %}
+                        <span class="social">
+                        <p>Welcome {{user.name}} <a href="{% url 'logout' %}">Logout</a></p>
+                        </span>
+                    {% else %}
+                        <span class="social">
+                        <a href="{% url 'social:begin' 'fenix' %}">Login</a><br>
+                        </span>
+                    {% endif %}
+                    </div>
+                </div>
+                {% block header_content %}
+                {% endblock %}
+            </div>
+
+            <div class="sidebar">
+                <ul>
+                    <li class="listTitle"><strong>Elections</strong><hr></li>
+                    <li class="listItem"><a>Main</a></li>
+                    <li class="listItem"><a>Sort</a></li>
+                    <li class="listTitle"><strong>Admin</strong><hr></li>
+                    <li class="listItem"><a>Create</a></li>
+                    <li><a>Manage</a></li>
+                </ul>
+            </div>
+
+            <div class="main">
+                {% block content %}
+                {% endblock %}
+            </div>
+
+        </div>
+        
+    </body>
+</html>

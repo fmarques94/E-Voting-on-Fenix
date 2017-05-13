@@ -1,3 +1,16 @@
-<h1>It works<h1>
-<p>Hello {{ user }}!</p>
-<a href="{% url 'logout' %}">logout</a>
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>Home</title>
+{% endblock %}
+
+{% block header_content %}
+{% endblock %}
+
+{% block content %}
+    {% for election in elections %}
+        <p>election.name</p>
+    {% empty %}
+        <p>No elections are running or planned at the current time.</p>
+    {% endfor %}
+{% endblock %}
