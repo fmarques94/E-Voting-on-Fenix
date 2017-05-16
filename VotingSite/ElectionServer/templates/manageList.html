@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
 {% block extra_head_block %}
-<title>Home</title>        
+<title>Manage</title>        
 {% load static %}
-<link rel="stylesheet" type="text/css" href="{% static 'style/home.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'style/manageList.css' %}" />
 {% endblock %}
 
 {% block header_content %}
@@ -11,7 +11,7 @@
 
 {% block content %}
     {% for election in elections %}
-        <a href="{% url 'election' election_id=election.uuid %}">
+        <a href="{% url 'manage' election_id=election.uuid %}">
             <div class='ElectionBox'>
                 <table>
                     <tr>
@@ -50,6 +50,6 @@
             </div>
         </a>
     {% empty %}
-        <p>No elections are running or planned at the current time.</p>
+        <p>There are currently no elections where you are administrator.</p>
     {% endfor %}
 {% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>Manage Questions</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/home.css' %}" />
+<script src="{% static 'js/ManageQuestions.js' %}"></script> 
+{% endblock %}
+
+{% block header_content %}
+{% endblock %}
+
+{% block content %}
+<form class="QuestionAnswerForm" onsubmit="add_question('{{ csrf_token }}'); return false;" action="#">
+    <table class="QuestionAnswerTable">
+        <tr>
+            <td>
+                Question:
+            </td>
+            <td>
+                <input type="text" name="question">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                Answer 1:
+            </td>
+            <td>
+                <input type="text" name="answer_1">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                Answer 2:
+            </td>
+            <td>
+                <input type="text" name="Answer_2">
+            </td>
+        </tr>
+    </table>
+    <a href="javascript:add_answers()">Add Answer</a>
+    <input type="submit" value="Submit">
+</form>
+{% endblock%}

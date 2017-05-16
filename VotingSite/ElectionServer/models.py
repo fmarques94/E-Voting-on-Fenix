@@ -19,3 +19,11 @@ class Election(models.Model):
 class Trustee(models.Model):
     election = models.ForeignKey(Election, on_delete = models.CASCADE)
     user = models.ForeignKey(FenixUser,on_delete=models.CASCADE)
+
+class Question(models.Model):
+    election = models.ForeignKey(Election,on_delete=models.CASCADE)
+    question = models.TextField()
+
+class Answer(models.Model):
+    question = models.ForeignKey(Question,on_delete=models.CASCADE)
+    answer = models.TextField()
