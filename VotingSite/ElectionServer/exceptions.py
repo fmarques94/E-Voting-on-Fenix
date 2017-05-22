@@ -1,0 +1,2 @@
+class TrusteeAlreadyPresentError(Exception):
+    pass

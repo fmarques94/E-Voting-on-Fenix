@@ -12,4 +12,6 @@
 {% block content %}
     {{election.name}}
     <a href="{% url 'manageQuestions' election_id=election.uuid %}">Questions</a>
+    <a href="{% url 'addVoters' election_id=election.uuid %}">Add Voters</a>
+    <a href="{% url 'manageTrustees' election_id=election.uuid %}">Add Trustees</a>
 {% endblock %}

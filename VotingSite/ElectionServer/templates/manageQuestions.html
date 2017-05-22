@@ -12,6 +12,12 @@
 {% endblock %}
 
 {% block content %}
+{% for questions in election.question_set.all %}
+    <p>{{questions.question}}</p>
+    {% for answers in questions.answer_set.all %}
+        <p>{{answers.answer}}</p>
+    {% endfor %}
+{% endfor %}
 <form class="QuestionAnswerForm" onsubmit="add_question('{{ csrf_token }}'); return false;" action="#">
     <table class="QuestionAnswerTable">
         <tr>

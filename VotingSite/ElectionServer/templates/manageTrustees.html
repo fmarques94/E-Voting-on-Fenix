@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>Manage Trustees</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+{% load static %}
+<script src="{% static 'js/manageTrustees.js' %}"></script> 
+{% endblock %}
+
+{% block header_content %}
+{% endblock %}
+
+{% block content %}
+{%for voter in election.eligiblevoter_set.all%}
+{{voter.name}}
+{{% endfor %}}
+[<a href="javascript:removeTrustee('{{trustee.trusteeId}}','{{ csrf_token }}')">X</a>] {{trustee.trusteeId}} - {{trustee.name}}
+{% endfor %}
+    <form onsubmit="addTrustees(this,'{{ csrf_token }}');return false;" action="#">
+        <table>
+        <tr>
+            <td>
+                Trustee id:
+            </td>
+            <td>
+                <input type="text">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                Name:
+            </td>
+            <td>
+                <input type="text">
+            </td>
+        </tr>
+        <tr>
+            <td>
+            Email:
+            </td>
+            <td>
+                <input type="email">
+            </td>     
+        </tr>
+        </table>
+        <input type="submit" value="Submit" />
+    </form>
+{% endblock %}

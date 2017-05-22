@@ -19,9 +19,7 @@ function add_question(token){
     for(var i=1; i < form.length; i++){
         arr['answer'][i] = form[i].value
     }
-    console.log(arr)
     var formData = JSON.stringify(arr);
-    console.log(formData)
     $.ajax({
         type: "POST",
         url: window.location.href,

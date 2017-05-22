@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>AddVoters</title>
+{% load static %}
+<script src="{% static 'js/utils.js' %}"></script> 
+{% endblock %}
+
+{% block header_content %}
+{% endblock %}
+
+{% block content %}
+{%for voter in election.trustee_set.all%}
+{% endfor %}
+<form onsubmit="return IsCSV(this);" action="{% url 'addVoters' election_id=election.uuid %}" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input id="File" type="file" name="voters" accept=".csv">
+    <input type="submit">
+</form>
+{% endblock %}
