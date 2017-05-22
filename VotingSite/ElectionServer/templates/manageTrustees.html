@@ -11,11 +11,21 @@
 {% endblock %}
 
 {% block content %}
-{%for voter in election.eligiblevoter_set.all%}
-{{voter.name}}
-{{% endfor %}}
-[<a href="javascript:removeTrustee('{{trustee.trusteeId}}','{{ csrf_token }}')">X</a>] {{trustee.trusteeId}} - {{trustee.name}}
+<table>
+{%for trustee in election.trustee_set.all%}
+<tr>
+    <td>
+        [<a href="javascript:removeTrustee('{{trustee.trusteeId}}','{{ csrf_token }}')">X</a>]
+    </td>
+    <td>
+        {{trustee.trusteeId}}
+    </td>
+    <td>
+        {{trustee.name}}
+    </td>
+</tr>
 {% endfor %}
+</table>
     <form onsubmit="addTrustees(this,'{{ csrf_token }}');return false;" action="#">
         <table>
         <tr>

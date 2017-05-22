@@ -1,6 +1,7 @@
 from ElectionServer.models import Election,Question,Answer,EligibleVoter,Trustee
 from ElectionServer.exceptions import TrusteeAlreadyPresentError
 from django.db.utils import IntegrityError
+from django.db import transaction
 import csv
 
 def parseQuestion(jsonData,election_id):
@@ -14,18 +15,23 @@ def parseQuestion(jsonData,election_id):
         answer.answer = jsonData['answer'][key]
         answer.save()
 
-def parseVoterFile(csvfile,election_id):
-    election = Election.objects.get(uuid=election_id)
+def parseVoterFile(csvfile,election):
     reader = csv.reader(csvfile.read().decode('utf-8-sig').split('\n'),delimiter=";")
-    for row in reader:
-        if(len(row)>0):
-            voter = EligibleVoter()
-            voter.election = election
-            voter.voterId = row[0]
-            voter.name = row[1]
-            voter.email = row[2]
-            voter.voted = False
-            voter.save()
+    voterList = []
+    try:
+        with transaction.atomic():
+            for row in reader:
+                if(len(row)>0):
+                    voter = EligibleVoter()
+                    voter.election = election
+                    voter.voterId = row[0]
+                    voter.name = row[1]
+                    voter.email = row[2]
+                    voter.voted = False
+                    voter.save()
+    except IntegrityError:
+        return row[0]
+    return None
 
 def parseTrustees(jsonData,election):
     if "addTrustees" in jsonData:

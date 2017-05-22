@@ -10,8 +10,21 @@
 {% endblock %}
 
 {% block content %}
-{%for voter in election.trustee_set.all%}
+{% if error %}
+<p>Error: {{error}} </p>
+{% endif%}
+<table>
+{%for voter in election.eligiblevoter_set.all%}
+<tr>
+    <td>
+        {{voter.voterId}}
+    </td>
+    <td>
+        {{voter.name}}
+    </td>
+</tr>
 {% endfor %}
+</table>
 <form onsubmit="return IsCSV(this);" action="{% url 'addVoters' election_id=election.uuid %}" method="POST" enctype="multipart/form-data">
     {% csrf_token %}
     <input id="File" type="file" name="voters" accept=".csv">
