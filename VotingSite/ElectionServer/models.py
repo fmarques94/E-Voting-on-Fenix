@@ -15,6 +15,9 @@ class Election(models.Model):
     timeOpenBooth = models.TimeField()
     timeCloseBooth = models.TimeField()
     admin = models.ForeignKey(FenixUser, on_delete = models.CASCADE)
+    p = models.TextField()
+    q = models.TextField()
+    g = models.TextField()
 
 class Question(models.Model):
     election = models.ForeignKey(Election,on_delete=models.CASCADE)
@@ -39,5 +42,13 @@ class Trustee(models.Model):
     trusteeId = models.CharField(max_length=10)
     name = models.CharField(max_length=400)
     email = models.EmailField(max_length=100)
+    keyShare = models.TextField()
     class Meta:
         unique_together = (('election','trusteeId'),)
+
+class Ballot(models.Model):
+    election = models.ForeignKey(Election,on_delete=models.CASCADE)
+    ballot = models.TextField()
+    publicCredential = models.TextField()
+    class Meta:
+        unique_together = (('election','publicCredential'),)

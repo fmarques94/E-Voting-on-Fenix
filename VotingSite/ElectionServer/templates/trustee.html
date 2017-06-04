@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+{% load static %}
+<script src="{% static 'js/jsbn.js' %}"></script>
+<script src="{% static 'js/jsbn2.js' %}"></script>
+<script src="{% static 'js/ElGamal.js' %}"></script>
+<script src="{% static 'js/KeyGeneration.js' %}"></script>
+{% endblock %}
+
+{% block header_content %}
+{% endblock %}
+
+{% block content %}
+
+{% if trustee.keyShare %}
+{% else %}
+    {{trustee.name}}
+    <form action="javascript:generateKeyShare('{{csrf_token}}','{{election.p}}','{{election.g}}')">
+    {% csrf_token %}
+    <input class="createKeysButton" type="submit" value="Generate Key">
+    </form> 
+{% endif%}
+{% endblock %}

@@ -55,7 +55,11 @@ def addTrustee(jsonData,election):
             trustee.name = value['name']
             trustee.email = value['email']
             trustee.save()
-            return True;
+            return True
         except IntegrityError:
             raise TrusteeAlreadyPresentError()
     
+def receiveKeyShare(jsonData,trustee):
+    print(jsonData)
+    trustee.keyShare=jsonData['keyShare']
+    trustee.save()

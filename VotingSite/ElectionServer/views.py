@@ -8,6 +8,7 @@ from django.http import Http404
 from ElectionServer.models import Election
 from ElectionServer.forms import ElectionCreationForm
 from ElectionServer.parser import *
+from ElectionServer.Crypto.ParameterGenerator import generate_parameters
 import uuid
 import json
 
@@ -34,6 +35,10 @@ def createElection(request):
             newElection.timeOpenBooth = form.cleaned_data['timeOpenBooth']
             newElection.timeCloseBooth = form.cleaned_data['timeCloseBooth']
             newElection.admin = request.user
+            parameters = generate_parameters()
+            newElection.p = parameters['p']
+            newElection.q = parameters['q']
+            newElection.g = parameters['g']
             newElection.save()
             return redirect(manage,election_id = newElection.uuid)
     else:
@@ -121,3 +126,28 @@ def manageTrustees(request,election_id):
             response.status_code = 400
             return response
     return render(request,"manageTrustees.html",context)
+
+@login_required
+def trustee(request,election_id,trustee_id):
+    try:
+        election = Election.objects.get(uuid=election_id)
+    except Election.DoesNotExist:
+        raise Http404("Election does not exist")
+    print(request.user.username)
+    if request.user.username != trustee_id:
+        return HttpResponse('<h1>Error 401: Unauthorized</h1>', status=401)
+    trustee = election.trustee_set.all().filter(trusteeId=trustee_id).first()
+    context = {'trustee': trustee,'election':election}
+    if trustee:
+        if request.method == 'POST':
+            data = request.body.decode('utf-8')
+            receiveKeyShare(json.loads(data),trustee)
+            payload = {'success': True}
+            print("Success")
+            return HttpResponse(json.dumps(payload),content_type='application/json')
+        else:
+            print(trustee.name)
+            return render(request,"trustee.html",context)
+    else:
+        return HttpResponse('<h1>Error 401: Unauthorized</h1>', status=401)
+
