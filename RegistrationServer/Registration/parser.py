@@ -29,30 +29,24 @@ def parseElectionJson(jsonObject):
     return response
 
 def createCredentials(jsonObject):
-    if 'evoter' in jsonObject:
-        if all(key in eVoterKeys for key in jsonObject['evoter']):
+    if all(key in eVoterKeys for key in jsonObject):
+        try:
             try:
-                try:
-                    election = Election.objects.get(uuid=jsonObject['evoter']['electionId'])
-                except Election.DoesNotExist:
-                    payload = {'error': 'Election with id ' + jsonObject['evoter']['electionId'] + ' is not in the server'}
-                    response = HttpResponse(json.dumps(payload),content_type='application/json')
-                    response.status_code = 400
-                    return response
-                voter = EVoter()
-                voter.election = election
-                voter.voterId = jsonObject['evoter']['id']
-                voter.email = jsonObject['evoter']['email']
-                voter.save()
-            except IntegrityError:
-                payload = {'error': 'Election already in server.'}
+                election = Election.objects.get(uuid=jsonObject['electionId'])
+            except Election.DoesNotExist:
+                payload = {'error': 'Election with id ' + jsonObject['electionId'] + ' is not in the server'}
                 response = HttpResponse(json.dumps(payload),content_type='application/json')
-                response.status_code = 409
+                response.status_code = 400
                 return response
-        else:
-            payload = {'error': 'Json file does not contain all necessary information'}
+            voter = EVoter()
+            voter.election = election
+            voter.voterId = jsonObject['voterId']
+            voter.email = jsonObject['email']
+            voter.save()
+        except IntegrityError:
+            payload = {'error': 'Election already in server.'}
             response = HttpResponse(json.dumps(payload),content_type='application/json')
-            response.status_code = 400
+            response.status_code = 409
             return response
     else:
         payload = {'error': 'Json file does not contain all necessary information'}
@@ -66,9 +60,15 @@ def createCredentials(jsonObject):
 
    send_mail(
     'E-Voting on Fenix Credentials',
-    "You're credentials for the election with id " + election.uuid + " are " + keys["priv"]["a"],
+    "You're credentials for the election with id " + election.uuid + " are:\n"+
+    "Secret:" + keys["priv"]["a"] + "\n" +
+    "Public:" + keys["pub"]["beta"],
     'no-reply@tecnico.ulisboa.pt',
     [voter.email],
     fail_silently=False,)
-   payload = {'sucess': True}
+   payload = {
+       'voterId': voter.voterId,
+       'electionId': electionId,
+       'public credential': keys["pub"]["beta"]
+    }
    return HttpResponse(json.dumps(payload),content_type='application/json')

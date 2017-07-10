@@ -1,4 +1,112 @@
-from django.shortcuts import render,redirect
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
+from django.core import serializers
+from django.http import HttpResponse, HttpResponseNotAllowed, Http404, HttpResponseForbidden
+
+#Models
+from ElectionServer.models import Election 
+from ElectionServer.models import Trustee
+
+def home(request):
+    context = {'elections': Election.objects.all()}
+    return render(request,'home.html',context)
+
+def login(request):
+    return render(request,'login.html')
+
+def getElections(request):
+    if request.method == 'GET':
+        data = serializers.serialize('json',list(Election.objects.all()))
+        return HttpResponse(json.dumps(data),content_type='application/json')
+    else:
+        return HttpResponseNotAllowed(['GET'])
+
+@login_required
+def createElection(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            parameters = generate_parameters()
+            election = new Election()
+            election.name = data['name']
+            election.description = data['description']
+            election.startDate = data['startDate']
+            election.endDate = data['endDate']
+            election.openCastTime = data['openCastTime']
+            election.closeCastTime = data['closeCastTime']
+            election.admin = request.user
+            election.cryptoParameters = {
+                'p':parameters['p'],
+                'q':parameters['q'],
+                'g':parameters['g']
+            }
+            election.save()
+            return HttpResponse(json.dumps({
+                'success':True,
+                'id':election.id
+                }),content_type='application/json')
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+    elif request.method == 'GET':
+        #TODO
+    else:
+        return HttpResponseNotAllowed(['GET','POST'])
+
+@login_required
+def election(request,election_id):
+    if method.request == 'GET':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            raise Http404("Election does not exist")
+        #TODO
+    else:
+        return HttpResponseNotAllowed(['GET'])
+
+@login_required
+def addTrustees(request,election_id):
+    if method.request == 'POST':
+        try:
+            election = Election.objects.get(id=election_id)
+            if request.user != election.admin:
+                return HttpResponseForbidden("Access denied")
+            data = json.loads(request.body.decode('utf-8'))
+            for trusteeData in data['trusteeList']:
+                trustee = new Trustee()
+                trustee.election = election
+                trustee.id = trusteeData['id']
+                trustee.name = trusteeData['name']
+                trustee.email = trusteeData['email']
+                trustee.save()
+            except Election.DoesNotExist:
+                return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+            except Exception as exception:
+                return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+    else:
+        return HttpResponseNotAllowed(['GET'])
+
+@login_required
+def removeTrustees(request,election_id):
+    if method.request == 'POST':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        data = json.loads(request.body.decode('utf-8'))
+        for trusteeData in data['trusteeList']:
+            try:
+                Trustee.objects.get(id=trusteeData['id']).delete()
+            except Trustee.DoesNotExist:
+                pass
+            except Exception as exception:
+                return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')  
+    else:
+        return HttpResponseNotAllowed(['GET'])
+
+'''from django.shortcuts import render,redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.http import HttpResponse
@@ -11,6 +119,7 @@ from ElectionServer.parser import *
 from ElectionServer.Crypto.ParameterGenerator import generate_parameters
 import uuid
 import json
+import requests
 
 # Create your views here.
 
@@ -133,7 +242,6 @@ def trustee(request,election_id,trustee_id):
         election = Election.objects.get(uuid=election_id)
     except Election.DoesNotExist:
         raise Http404("Election does not exist")
-    print(request.user.username)
     if request.user.username != trustee_id:
         return HttpResponse('<h1>Error 401: Unauthorized</h1>', status=401)
     trustee = election.trustee_set.all().filter(trusteeId=trustee_id).first()
@@ -151,3 +259,38 @@ def trustee(request,election_id,trustee_id):
     else:
         return HttpResponse('<h1>Error 401: Unauthorized</h1>', status=401)
 
+@login_required
+def register(request,election_id):
+    try:
+        election = Election.objects.get(uuid=election_id)
+    except Election.DoesNotExist:
+        raise Http404("Election does not exist")
+    voter = election.eligiblevoter_set.all().filter(voterId=request.user.username).first()
+    if voter:
+        if request.method == 'GET':
+            r = request.json('127.0.0.1:8001/createCredentials/',json={
+                'electionId':election_id,
+                'voterId':voter.voterId,
+                'email':voter.email})
+            if r.status != 200:
+                return HttpResponse(json.dumps({'error':r.status}),content_type='application/json')
+            else:
+                r.json()
+                return HttpResponse(json.dumps({'success':True}),content_type='application/json')
+
+@login_required
+def cast(request,election_id):
+     try:
+        election = Election.objects.get(uuid=election_id)
+    except Election.DoesNotExist:
+        raise Http404("Election does not exist")
+    voter = election.eligiblevoter_set.all().filter(voterId=request.user.username).first()
+    if voter:
+        if request.method == 'GET':
+            payload = {}
+            for question in election.question_set.all():
+                payload[question] = question.answer_set.all()
+            return HttpResponse(json.dumps(payload),content_type='application/json')
+        else:
+            
+'''

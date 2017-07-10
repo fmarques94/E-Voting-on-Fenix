@@ -1,4 +1,4 @@
-from ElectionServer.models import Election,Question,Answer,EligibleVoter,Trustee
+'''from ElectionServer.models import Election,Question,Answer,EligibleVoter,Trustee
 from ElectionServer.exceptions import TrusteeAlreadyPresentError
 from django.db.utils import IntegrityError
 from django.db import transaction
@@ -63,3 +63,4 @@ def receiveKeyShare(jsonData,trustee):
     print(jsonData)
     trustee.keyShare=jsonData['keyShare']
     trustee.save()
+'''
