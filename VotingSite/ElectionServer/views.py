@@ -3,10 +3,15 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.core import serializers
 from django.http import HttpResponse, HttpResponseNotAllowed, Http404, HttpResponseForbidden
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.db import transaction
 
 #Models
 from ElectionServer.models import Election 
 from ElectionServer.models import Trustee
+from ElectionServer.models import Voter
+from ElectionServer.models import Question
+from ElectionServer.models import Answer
 
 def home(request):
     context = {'elections': Election.objects.all()}
@@ -24,11 +29,13 @@ def getElections(request):
 
 @login_required
 def createElection(request):
-    if request.method == 'POST':
+
+    @csrf_exempt
+    def postCreateElection(request):
         try:
             data = json.loads(request.body.decode('utf-8'))
             parameters = generate_parameters()
-            election = new Election()
+            election = Election()
             election.name = data['name']
             election.description = data['description']
             election.startDate = data['startDate']
@@ -48,14 +55,20 @@ def createElection(request):
                 }),content_type='application/json')
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
-    elif request.method == 'GET':
+
+    def getCreateElection(request):
         #TODO
+    
+    if request.method == 'POST':
+        return postCreateElection(request)
+    elif request.method == 'GET':
+        return getCreateElection(request)
     else:
         return HttpResponseNotAllowed(['GET','POST'])
 
 @login_required
 def election(request,election_id):
-    if method.request == 'GET':
+    if request.method == 'GET':
         try:
             election = Election.objects.get(id=election_id)
         except Election.DoesNotExist:
@@ -65,30 +78,33 @@ def election(request,election_id):
         return HttpResponseNotAllowed(['GET'])
 
 @login_required
+@csrf_exempt
 def addTrustees(request,election_id):
-    if method.request == 'POST':
+    if request.method == 'POST':
         try:
             election = Election.objects.get(id=election_id)
             if request.user != election.admin:
                 return HttpResponseForbidden("Access denied")
             data = json.loads(request.body.decode('utf-8'))
-            for trusteeData in data['trusteeList']:
-                trustee = new Trustee()
-                trustee.election = election
-                trustee.id = trusteeData['id']
-                trustee.name = trusteeData['name']
-                trustee.email = trusteeData['email']
-                trustee.save()
+            with transaction.atomic():
+                for trusteeData in data['trusteeList']:
+                    trustee = Trustee()
+                    trustee.election = election
+                    trustee.id = trusteeData['id']
+                    trustee.name = trusteeData['name']
+                    trustee.email = trusteeData['email']
+                    trustee.save()
             except Election.DoesNotExist:
                 return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
             except Exception as exception:
                 return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
     else:
-        return HttpResponseNotAllowed(['GET'])
+        return HttpResponseNotAllowed(['POST'])
 
 @login_required
+@csrf_exempt
 def removeTrustees(request,election_id):
-    if method.request == 'POST':
+    if request.method == 'POST':
         try:
             election = Election.objects.get(id=election_id)
         except Election.DoesNotExist:
@@ -98,13 +114,124 @@ def removeTrustees(request,election_id):
         data = json.loads(request.body.decode('utf-8'))
         for trusteeData in data['trusteeList']:
             try:
-                Trustee.objects.get(id=trusteeData['id']).delete()
+                Trustee.objects.get(id=trusteeData['id'],election=election).delete()
             except Trustee.DoesNotExist:
                 pass
             except Exception as exception:
                 return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')  
     else:
-        return HttpResponseNotAllowed(['GET'])
+        return HttpResponseNotAllowed(['POST'])
+
+@login_required
+def addVoters(request,election_id):
+
+    def addVotersFile(request,election):
+        csvfile = request.FILES['voters']
+        reader = csv.reader(csvfile.read().decode('utf-8-sig').split('\n'),delimiter=";")
+        try:
+            with transaction.atomic():
+                for row in reader:
+                    if(len(row)>0):
+                        voter = Voter()
+                        voter.election = election
+                        voter.id = row[0]
+                        voter.email = row[1]
+                        voter.save()
+        except IntegrityError:
+            return HttpResponse(json.dumps({
+                'error':'Voter with id ' + row[0] + 'is already in the election'
+                }), content_type='application/json')
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+        return HttpResponse(json.dumps({
+                'success':True
+                }), content_type='application/json')
+
+    @csrf_exempt
+    def addVotersJson(request,election):
+        data = json.loads(request.body.decode('utf-8'))
+        try:
+            with transaction.atomic():
+                for voterData in data['voterList']:
+                    voter = Voter()
+                    voter.election = election
+                    voter.id = voterData['id']
+                    voter.email = voterData['email']
+                    voter.save()
+        except IntegrityError:
+            return HttpResponse(json.dumps({
+                'error':'Voter with id ' + voterData['id'] + 'is already in the election'
+                }), content_type='application/json')
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+        return HttpResponse(json.dumps({
+                'success':True
+                }), content_type='application/json')
+
+    if request.method == 'POST':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        if request.FILES:
+            return addVotersFile(request,election)
+        else:
+            return addVotersJson(request,election)
+    else:
+        return HttpResponseNotAllowed(['POST'])
+
+
+@login_required
+@csrf_exempt
+def removeVoters(request,election_id):
+    if request.method == 'POST':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        data = json.loads(request.body.decode('utf-8'))
+        for voterData in data['voterList']:
+            try:
+                Voter.objects.get(id=voterData['id'],election=election).delete()
+            except Voter.DoesNotExist:
+                pass
+            except Exception as exception:
+                return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')  
+    else:
+        return HttpResponseNotAllowed(['POST'])
+
+@login_required
+@csrf_exempt
+def addQuestion(request,election_id):
+    if request.method == 'POST':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        data = json.loads(request.body.decode('utf-8'))
+        try:
+            with transaction.atomic():
+                for questionData in data['questionList']:
+                    question = Question()
+                    question.election = election
+                    question.question = questionData['question']
+                    question.save()
+                    for answerData in questionData['answers']:
+                        answer = Answer()
+                        answer.answer = answerData
+                        answer.save()
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+        return HttpResponse(json.dumps({'success':True}), content_type='application/json')      
+    else:
+        return HttpResponseNotAllowed(['POST'])
+
 
 '''from django.shortcuts import render,redirect
 from django.contrib.auth.decorators import login_required
