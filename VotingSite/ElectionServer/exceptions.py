@@ -1,2 +1,0 @@
-class TrusteeAlreadyPresentError(Exception):
-    pass
