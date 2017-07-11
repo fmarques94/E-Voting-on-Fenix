@@ -153,3 +153,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+#Variables
+CREDENTIAL_AUTHORITY = '127.0.0.1:8001'
+AUTHORIZED_ADMINS = ['ist176419',]

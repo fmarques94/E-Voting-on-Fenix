@@ -65,16 +65,11 @@ def createElection(request):
                 }),content_type='application/json')
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
-
-    def getCreateElection(request):
-        #TODO
     
     if request.method == 'POST':
         return postCreateElection(request)
-    elif request.method == 'GET':
-        return getCreateElection(request)
     else:
-        return HttpResponseNotAllowed(['GET','POST'])
+        return HttpResponseNotAllowed(['POST'])
 
 @login_required
 def election(request,election_id):
@@ -130,6 +125,9 @@ def removeTrustees(request,election_id):
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
+        if datetime.now() >= election.startDate:
+            return HttpResponse(json.dumps({'error':'The election has already started. Cannot remove trustees now.'}),
+             content_type='application/json', status=404)
         data = json.loads(request.body.decode('utf-8'))
         for trusteeData in data['trusteeList']:
             try:
@@ -229,6 +227,9 @@ def removeVoters(request,election_id):
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
+        if datetime.now() >= election.startDate:
+            return HttpResponse(json.dumps({'error':'The election has already started. Cannot remove voters now.'}),
+             content_type='application/json', status=404)
         data = json.loads(request.body.decode('utf-8'))
         for voterData in data['voterList']:
             try:
@@ -295,6 +296,9 @@ def removeQuestions(request,election_id):
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
+        if datetime.now() >= election.startDate:
+            return HttpResponse(json.dumps({'error':'The election has already started. Cannot remove questions now.'}),
+             content_type='application/json', status=404)
         data = json.loads(request.body.decode('utf-8'))
         try:
             for questionData in data['questionList']:
@@ -331,6 +335,9 @@ def register(request,election_id):
             voter = Voter.objects.get(id=request.user,election=election)
         except Voter.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Voter is not eligible for this election'}),
+             content_type='application/json', status=404)
+        if datetime.now() >= election.endDate:
+            return HttpResponse(json.dumps({'error':'The election has ended'}),
              content_type='application/json', status=404)
         payload = {
             'election':election.id,
