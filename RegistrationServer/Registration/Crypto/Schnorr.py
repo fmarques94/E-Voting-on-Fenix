@@ -2,8 +2,8 @@ import random
 import secrets
 import hashlib
 import math
-import primeGenerator as Prime
-import numbTheory
+import Registration.Crypto.primeGenerator as Prime
+import Registration.Crypto.numbTheory
 
 class Schnorr:
     #Implements the Schnorr signature scheme

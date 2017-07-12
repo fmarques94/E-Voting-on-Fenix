@@ -18,6 +18,5 @@ from django.conf.urls import url
 from Registration import views
 
 urlpatterns = [
-    url(r'^addElection/', views.addElection, name="addElection"),
-    url(r'^createCredentials/',views.createCredentials, name="createCredentials")
+    url(r'^$', views.createCredentials, name="createCredentials"),
 ]

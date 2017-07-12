@@ -23,6 +23,9 @@ from ElectionServer.models import Question
 from ElectionServer.models import Answer
 from ElectionServer.models import Ballot
 
+#Crypto
+from ElectionServer.Crypto.ParameterGenerator import generate_parameters
+
 def home(request):
     context = {'elections': Election.objects.all()}
     return render(request,'home.html',context)
@@ -33,14 +36,15 @@ def login(request):
 def getElections(request):
     if request.method == 'GET':
         data = serializers.serialize('json',list(Election.objects.all()))
-        return HttpResponse(json.dumps(data),content_type='application/json')
+        return HttpResponse(data,content_type='application/json')
     else:
         return HttpResponseNotAllowed(['GET'])
 
 @login_required
+@csrf_exempt
 def createElection(request):
 
-    @csrf_exempt
+    #@csrf_exempt
     def postCreateElection(request):
         try:
             data = json.loads(request.body.decode('utf-8'))
@@ -61,7 +65,7 @@ def createElection(request):
             election.save()
             return HttpResponse(json.dumps({
                 'success':True,
-                'id':election.id
+                'id':str(election.id)
                 }),content_type='application/json')
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
@@ -93,24 +97,25 @@ def addTrustees(request,election_id):
             if request.user != election.admin:
                 return HttpResponseForbidden("Access denied")
             if datetime.now() >= election.startDate:
-            return HttpResponse(json.dumps({'error':'The election has already started. Cannot add trustees now.'}),
+                return HttpResponse(json.dumps({'error':'The election has already started. Cannot add trustees now.'}),
              content_type='application/json', status=404)
             data = json.loads(request.body.decode('utf-8'))
             with transaction.atomic():
                 for trusteeData in data['trusteeList']:
                     trustee = Trustee()
                     trustee.election = election
-                    trustee.id = trusteeData['id']
+                    trustee.identifier = trusteeData['id']
                     trustee.name = trusteeData['name']
                     trustee.email = trusteeData['email']
                     trustee.save()
-            except Election.DoesNotExist:
-                return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
-            except IntegrityError:
-                return HttpResponse(json.dumps({'error':'Trustee '+ trusteeData['id'] + ' already present'})
-                , content_type='application/json', status=404)
-            except Exception as exception:
-                return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+            return HttpResponse(json.dumps({'success':True}),content_type='application/json') 
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        except IntegrityError:
+            return HttpResponse(json.dumps({'error':'Trustee '+ trusteeData['id'] + ' already present'})
+            , content_type='application/json', status=404)
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
     else:
         return HttpResponseNotAllowed(['POST'])
 
@@ -128,14 +133,17 @@ def removeTrustees(request,election_id):
         if datetime.now() >= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has already started. Cannot remove trustees now.'}),
              content_type='application/json', status=404)
-        data = json.loads(request.body.decode('utf-8'))
-        for trusteeData in data['trusteeList']:
-            try:
-                Trustee.objects.get(id=trusteeData['id'],election=election).delete()
-            except Trustee.DoesNotExist:
-                pass
-            except Exception as exception:
-                return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')  
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            for trusteeData in data['trusteeList']:
+                Trustee.objects.get(identifier=trusteeData['id'],election=election).delete()
+            return HttpResponse(json.dumps({
+                'success':True
+                }),content_type='application/json')
+        except Trustee.DoesNotExist:
+            pass
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')  
     else:
         return HttpResponseNotAllowed(['POST'])
 
@@ -147,7 +155,7 @@ def getTrustees(request,election_id):
         except Election.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         data = serializers.serialize('json',list(Trustee.objects.all().filter(election=election)))
-        return HttpResponse(json.dumps(data),content_type='application/json')
+        return HttpResponse(data,content_type='application/json')
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -157,15 +165,15 @@ def getTrustees(request,election_id):
 def addVoters(request,election_id):
 
     def addVotersFile(request,election):
-        csvfile = request.FILES['voters']
-        reader = csv.reader(csvfile.read().decode('utf-8-sig').split('\n'),delimiter=";")
         try:
+            csvfile = request.FILES['voters']
+            reader = csv.reader(csvfile.read().decode('utf-8-sig').split('\n'),delimiter=";")
             with transaction.atomic():
                 for row in reader:
                     if(len(row)>0):
                         voter = Voter()
                         voter.election = election
-                        voter.id = row[0]
+                        voter.identifier = row[0]
                         voter.email = row[1]
                         voter.save()
         except IntegrityError:
@@ -180,13 +188,13 @@ def addVoters(request,election_id):
 
     @csrf_exempt
     def addVotersJson(request,election):
-        data = json.loads(request.body.decode('utf-8'))
         try:
+            data = json.loads(request.body.decode('utf-8'))
             with transaction.atomic():
                 for voterData in data['voterList']:
                     voter = Voter()
                     voter.election = election
-                    voter.id = voterData['id']
+                    voter.identifier = voterData['id']
                     voter.email = voterData['email']
                     voter.save()
         except IntegrityError:
@@ -230,14 +238,17 @@ def removeVoters(request,election_id):
         if datetime.now() >= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has already started. Cannot remove voters now.'}),
              content_type='application/json', status=404)
-        data = json.loads(request.body.decode('utf-8'))
-        for voterData in data['voterList']:
-            try:
-                Voter.objects.get(id=voterData['id'],election=election).delete()
-            except Voter.DoesNotExist:
-                pass
-            except Exception as exception:
-                return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')  
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            for voterData in data['voterList']:
+                    Voter.objects.get(id=voterData['id'],election=election).delete()
+            return HttpResponse(json.dumps({
+                'success':True
+                }),content_type='application/json') 
+        except Voter.DoesNotExist:
+            pass
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')  
     else:
         return HttpResponseNotAllowed(['POST'])
 
@@ -249,7 +260,7 @@ def getVoters(request,election_id):
         except Election.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         data = serializers.serialize('json',list(Voter.objects.all().filter(election=election)))
-        return HttpResponse(json.dumps(data),content_type='application/json')
+        return HttpResponse(data,content_type='application/json')
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -268,8 +279,8 @@ def addQuestions(request,election_id):
         if datetime.now() >= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has already started. Cannot add questions now.'}),
              content_type='application/json', status=404)
-        data = json.loads(request.body.decode('utf-8'))
         try:
+            data = json.loads(request.body.decode('utf-8'))
             with transaction.atomic():
                 for questionData in data['questionList']:
                     question = Question()
@@ -299,12 +310,12 @@ def removeQuestions(request,election_id):
         if datetime.now() >= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has already started. Cannot remove questions now.'}),
              content_type='application/json', status=404)
-        data = json.loads(request.body.decode('utf-8'))
         try:
+            data = json.loads(request.body.decode('utf-8'))
             for questionData in data['questionList']:
                 Question.objects.get(id=questionData['id'],election=election).delete()
-            except Question.DoesNotExist:
-                pass
+        except Question.DoesNotExist:
+            pass
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
         return HttpResponse(json.dumps({'success':True}), content_type='application/json')      
@@ -319,7 +330,7 @@ def getQuestions(request,election_id):
         except Election.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         data = serializers.serialize('json',list(Question.objects.all().filter(election=election)))
-        return HttpResponse(json.dumps(data),content_type='application/json')
+        return HttpResponse(data,content_type='application/json')
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -332,7 +343,7 @@ def register(request,election_id):
         except Election.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         try:
-            voter = Voter.objects.get(id=request.user,election=election)
+            voter = Voter.objects.get(identifier=request.user,election=election)
         except Voter.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Voter is not eligible for this election'}),
              content_type='application/json', status=404)
@@ -341,8 +352,9 @@ def register(request,election_id):
              content_type='application/json', status=404)
         payload = {
             'election':election.id,
+            'electionName': election.name,
             'cryptoParameters':election.cryptoParameters,
-            'voter':voter.id,
+            'voter':voter.identifier,
             'email':voter.email,
         }
         r = requests.json(settings.CREDENTIAL_AUTHORITY,json=payload)
@@ -354,6 +366,9 @@ def register(request,election_id):
             voter.save()
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+        return HttpResponse(json.dumps({
+                'success':True
+                }),content_type='application/json')
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -361,13 +376,13 @@ def register(request,election_id):
 @login_required
 @csrf_exempt
 def cast(request,election_id):
-    if request.method == 'GET':
+    if request.method == 'POST':
         try:
             election = Election.objects.get(id=election_id)
         except Election.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         try:
-            voter = Voter.objects.get(id=request.user,election=election)
+            voter = Voter.objects.get(identifier=request.user,election=election)
         except Voter.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Voter is not eligible for this election'}),
              content_type='application/json', status=404)
@@ -385,11 +400,10 @@ def cast(request,election_id):
         data = json.loads(request.body.decode('utf-8'))
         try:
             if voter.publicCredential!=data['publicCredential']:
-                return HttpResponse(json.dumps({'error':'Invalid public credential for voter with id ' + voter.id}),
-             content_type='application/json', status=404)
-             ballot = Ballot.objects.get(election=election,publicCredential=voter.publicCredential)
-             return HttpResponse(json.dumps({'error':'The voter with id ' + voter.id + ' has already cast a ballot'}),
-             content_type='application/json', status=404)
+                return HttpResponse(json.dumps({'error':'Invalid public credential for voter with id ' + voter.identifier}),content_type='application/json', status=404)
+            ballot = Ballot.objects.get(election=election,publicCredential=voter.publicCredential)
+            return HttpResponse(json.dumps({'error':'The voter with id ' + voter.identifier + ' has already cast a ballot'}),
+            content_type='application/json', status=404)
         except Ballot.DoesNotExist:
             #TODO verify ZK-proofs
             try:
@@ -397,7 +411,10 @@ def cast(request,election_id):
                 ballot.publicCredential = voter.publicCredential
                 ballot.ballot = data['ballot']
                 ballot.save()
-        except Exception as exception:
-            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+            except Exception as exception:
+                return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+            return HttpResponse(json.dumps({
+                    'success':True
+                    }),content_type='application/json')
     else:
-        return HttpResponseNotAllowed(['GET'])
+        return HttpResponseNotAllowed(['POST'])

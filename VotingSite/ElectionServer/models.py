@@ -22,20 +22,20 @@ class Election(models.Model):
 
 class Trustee(models.Model):
     election = models.ForeignKey(Election,on_delete = models.CASCADE)
-    id = models.TextField()
+    identifier = models.TextField()
     name = models.TextField()
     email = models.EmailField(max_length=200)
-    publicKeyShare = TextField()
+    publicKeyShare = models.TextField()
     class Meta:
-        unique_together = (('election','id'),)
+        unique_together = (('election','identifier'),)
     
 class Voter(models.Model):
     election = models.ForeignKey(Election,on_delete = models.CASCADE)
-    id = models.TextField()
+    identifier = models.TextField()
     email = models.EmailField(max_length=200)
     publicCredential = models.TextField()
     class Meta:
-        unique_together = (('election','id'),)
+        unique_together = (('election','identifier'),)
 
 class Question(models.Model):
     election = models.ForeignKey(Election,on_delete = models.CASCADE)
@@ -44,7 +44,7 @@ class Question(models.Model):
 
 class Answer(models.Model):
     question = models.ForeignKey(Question,on_delete = models.CASCADE)
-    answer = TextField()
+    answer = models.TextField()
 
 class Ballot(models.Model):
     election = models.ForeignKey(Question,on_delete = models.CASCADE)
