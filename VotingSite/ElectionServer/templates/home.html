@@ -11,7 +11,7 @@
 
 {% block content %}
     {% for election in elections %}
-        <a href="{% url 'election' election_id=election.uuid %}">
+        <a href="{% url 'election' election_id=election.id %}">
             <div class='ElectionBox'>
                 <table>
                     <tr>
@@ -35,7 +35,7 @@
                             <strong>Election Date:</strong>
                         </td>
                         <td>
-                            {{election.start}} - {{election.end}}
+                            {{election.startDate}} - {{election.endDate}}
                         </td>
                     </tr>
                     <tr>
@@ -43,7 +43,7 @@
                             <strong>Booth Times:</strong>
                         </td>
                         <td>
-                            {{election.timeOpenBooth}} - {{election.timeCloseBooth}}
+                            {{election.openCastTime}} - {{election.closeCastTime}}
                         </td>
                     </tr>
                 </table>
