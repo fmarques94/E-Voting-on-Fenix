@@ -75,17 +75,6 @@ def createElection(request):
     else:
         return HttpResponseNotAllowed(['POST'])
 
-@login_required
-def election(request,election_id):
-    if request.method == 'GET':
-        try:
-            election = Election.objects.get(id=election_id)
-        except Election.DoesNotExist:
-            raise Http404("Election does not exist")
-        #TODO
-    else:
-        return HttpResponseNotAllowed(['GET'])
-
 #########################################################################################################################
 
 @login_required
@@ -418,3 +407,54 @@ def cast(request,election_id):
                     }),content_type='application/json')
     else:
         return HttpResponseNotAllowed(['POST'])
+
+@login_required
+def election(request,election_id):
+    if request.method == 'GET':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            raise Http404("Election does not exist")
+        #TODO
+    else:
+        return HttpResponseNotAllowed(['GET'])
+
+@login_required
+def manageTrustees(request,election_id):
+    if request.method == 'GET':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            raise Http404("Election does not exist")
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        #TODO
+    else:
+        return HttpResponseNotAllowed(['GET'])
+
+@login_required
+def manageVoters(request,election_id):
+    if request.method == 'GET':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            raise Http404("Election does not exist")
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        #TODO
+    else:
+        return HttpResponseNotAllowed(['GET'])
+
+@login_required
+def manageQuestions(request,election_id):
+    if request.method == 'GET':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            raise Http404("Election does not exist")
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        #TODO
+    else:
+        return HttpResponseNotAllowed(['GET'])
+
