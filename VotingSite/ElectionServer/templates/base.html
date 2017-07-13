@@ -7,26 +7,26 @@
         {% endblock %}
     </head>
     <body>
-        <div class="container">
-            <div class="header">
-                <img class="logo" src="logo src goes here" alt="logo.png"/>
-                <div class="socialOut">
-                    <div class="socialIn">
-                    {%if user.name %}
-                        <span class="social">
-                        <p>Welcome {{user.name}} <a href="{% url 'logout' %}">Logout</a></p>
-                        </span>
-                    {% else %}
-                        <span class="social">
-                        <a href="{% url 'social:begin' 'fenix' %}">Login</a><br>
-                        </span>
-                    {% endif %}
-                    </div>
-                </div>
-                {% block header_content %}
-                {% endblock %}
+        <div class="headerContainer">
+            <div class='LogoContainer'>
+                <img class="logo" src="{% static 'images/logo.png' %}" alt="logo.png"/>
             </div>
-
+            <div class="titleContainer">
+                <h1 class="title">E-Voting on Fenix</h1>
+            </div>
+            <div class="socialContainer">
+                {%if user.name %}
+                    <span class="social">
+                    <p>Welcome {{user.name}} <a href="{% url 'logout' %}">Logout</a></p>
+                    </span>
+                {% else %}
+                    <span class="social">
+                    <a href="{% url 'social:begin' 'fenix' %}">Login</a><br>
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="mainContainer">
             <div class="sidebar">
                 <ul>
                     <li class="listTitle"><strong>Elections</strong><hr></li>
@@ -37,11 +37,11 @@
             </div>
 
             <div class="main">
-                {% block content %}
-                {% endblock %}
+                <div class="content">
+                    {% block content %}
+                    {% endblock %}
+                </div>
             </div>
-
         </div>
-        
     </body>
 </html>
