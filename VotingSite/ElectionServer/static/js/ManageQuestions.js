@@ -1,31 +1,16 @@
+var answerCounter = 2;
 
-answer_count=2
-
-template = "<tr><td>Answer 2:</td><td><input type=\"text\" name=\"Answer_2\"></td></tr>"
-
-function add_answers(){
-    answer_count++;
-    $( ".QuestionAnswerTable" ).append("<tr><td>Answer "+answer_count+":</td><td><input type=\"text\" name=\"Answer_"+answer_count+"\"></td></tr>");
+function addMoreAnswers(){
+    answerCounter++;
+    $(".inputTable").append("<tr><td><b>Answer #"+answerCounter+":</b></td>"+
+                "<td><input type=\"text\" name=\"answer_"+answerCounter+"\"></td></tr>");
 }
 
-function add_question(token){
-    $.ajaxSetup({
-        headers: { "X-CSRFToken": token }
-    });
-    form = $(".QuestionAnswerForm").serializeArray()
-    var arr = {}
-    arr['question'] = form[0].value
-    arr['answer'] = {}
-    for(var i=1; i < form.length; i++){
-        arr['answer'][i] = form[i].value
+function toggleQuestionList(){
+    $(".QuestionList").toogle();
+    if($(".QuestionList").is(':hidden')){
+        $(".toggleButton").text('Show Question List &#2207')
+    }else{
+        $(".toggleButton").text('Hide Question List &#2206')
     }
-    var formData = JSON.stringify(arr);
-    $.ajax({
-        type: "POST",
-        url: window.location.href,
-        data: formData,
-        success: function(){window.location.reload();},
-        dataType: "json",
-        contentType : "application/json"
-        });
 }

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>Manage Questions</title>        
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/manageQuestions.css' %}" />
+<script src="{% static 'js/manageQuestions.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<h2>{{election.name}}</h2>
+<a class="toggleButton" href="javascript:toggleQuestionList()">Hide Question List &#2206</a>
+<div class="QuestionList">
+    <dl>
+        {% for question in election.question_set.all %}
+        <dt>[<a href="javascript:removeQuestion({{question.id}})">&#2716</a>]{{question.text}}</dt>
+            {% for answer in question.answer_set.all %}
+            <dd>{{answer.text}}</dd>
+            {% endfor %}
+        {% endfor %}
+    </dl>
+</div>
+
+<form action="javascript:submit()">
+    <fieldset>
+        <legend><h2>Add Question</h2></legend>
+        <table class="inputTable">
+            <tr>
+                <td>
+                    <b>Question:</b>
+                </td>
+                <td>
+                    <input type="text" name="question">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b>Answer #1:</b>
+                </td>
+                <td>
+                    <input type="text" name="answer_1">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b>Answer #2:</b>
+                </td>
+                <td>
+                    <input type="text" name="answer_2">
+                </td>
+            </tr>
+        </table>
+        <input class="inlineButton" type="submit" value="Submit">
+        <a class="inlineButton" href="javascript:addMoreAnswers()">Add Answer</a>
+        
+    </fieldset>
+</form>
+
+{% endblock%}

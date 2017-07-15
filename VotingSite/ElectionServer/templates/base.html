@@ -17,23 +17,24 @@
             <div class="socialContainer">
                 {%if user.name %}
                     <span class="social">
-                    <p>Welcome {{user.name}} <a href="{% url 'logout' %}">Logout</a></p>
+                    <p>Welcome {{user.name}}</p>
+                    <a class="LogButton" href="{% url 'logout' %}">Logout</a>
                     </span>
                 {% else %}
                     <span class="social">
-                    <a href="{% url 'social:begin' 'fenix' %}">Login</a><br>
+                    <a class="LogButton" href="{% url 'social:begin' 'fenix' %}">Login</a><br>
                     </span>
                 {% endif %}
             </div>
         </div>
         <div class="mainContainer">
             <div class="sidebar">
-                <ul>
-                    <li class="listTitle"><strong>Elections</strong><hr></li>
-                    <li class="listItem"><a href="{% url 'home' %}">Main</a></li>
-                    <li class="listItem"><a>Sort</a></li>
-                    <li class="listTitle"><strong>Admin</strong><hr></li>
-                </ul>
+                <a class="sidebarButton" id="home" href="{% url 'home' %}">Home</a>
+                <a class="sidebarButton" id="create" href="{% url 'createElection' %}">Create Election</a>
+                <!--<ul class="redirectList">
+                    <li class="firstListItem listItem"><div>Menu</div></li>
+                    <li class="restListItems listItem" ><div><a href="{% url 'home' %}">Main</a></div></li>
+                </ul>-->
             </div>
 
             <div class="main">

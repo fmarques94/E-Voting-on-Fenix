@@ -75,3 +75,77 @@ body {
 .content{
     margin: 10px;
 }
+
+.sidebarButton{
+    background-color: #696969;
+    border: none;
+    color: white;
+    font-weight: bold;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    font-size: 16px;
+    margin: 2px 2px 2px 2px;
+    cursor: pointer;
+}
+
+.sidebarButton:hover{
+    background-color: #424040;
+}
+
+.LogButton{
+    background-color: #696969;
+    border: none;
+    color: white;
+    font-weight: bold;
+    padding: 10px 15px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    margin: 2px 2px 2px 2px;
+    cursor: pointer;
+}
+
+.LogButton:hover{
+    background-color: #424040;
+}
+
+/*.redirectList{
+    list-style-type:none;
+    margin: 0px;
+    padding: 0px;
+    text-align: center;
+}
+
+.listItem{
+    display: -webkit-flex;
+    display: flex;
+    border: 1px solid #696969;
+    padding-bottom: 2px;
+    padding-top: 2px;
+    margin-bottom: 2px;
+    height: 5%;
+}
+
+.listItem div{
+    margin: auto;
+    width: 100%;
+    height: 100%;
+
+}
+
+.firstListItem{
+    background-color: darkgray;
+}
+
+.restListItems{
+    box-shadow: 2px 2px 1px grey;
+}
+
+.restListItems a{
+    height: 100%;
+    width: 100%;
+    margin: 0px; 
+    display: block;
+}*/

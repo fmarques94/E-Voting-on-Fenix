@@ -72,8 +72,10 @@ def createElection(request):
     
     if request.method == 'POST':
         return postCreateElection(request)
+    elif request.method == 'GET':
+        return render(request,'createElection.html')
     else:
-        return HttpResponseNotAllowed(['POST'])
+        return HttpResponseNotAllowed(['POST','GET'])
 
 #########################################################################################################################
 
@@ -415,7 +417,8 @@ def election(request,election_id):
             election = Election.objects.get(id=election_id)
         except Election.DoesNotExist:
             raise Http404("Election does not exist")
-        #TODO
+        if request.user == election.admin:
+            return render(request,'manageElection.html',{'election':election})
     else:
         return HttpResponseNotAllowed(['GET'])
 

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>{{election.name}}</title>        
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/manageElection.css' %}" />
+{% endblock %}
+
+{% block content %}
+<h2>{{election.name}}</h2>
+<table>
+    <tr>
+        <td>
+            <u>Description:</u>
+        </td>
+        <td>
+            {{election.description}}
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <u>Start Date:</u>
+        </td>
+        <td>
+            {{election.startDate}}
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <u>End Date:</u>
+        </td>
+        <td>
+            {{election.endDate}}
+        </td>
+    </tr>
+    {% if election.openCastTime %}
+    <tr>
+        <td>
+            <u>Open Cast Time:</u>
+        </td>
+        <td>
+            {{election.openCastTime}}
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <u>Close Cast Time:</u>
+        </td>
+        <td>
+            {{election.closeCastTime}}
+        </td>
+    </tr>
+    {% endif %}
+</table>
+
+<a class="ManageButton" href="{% url 'manageQuestions' election_id={{election.id}} %}">Manage Questions</a>
+<a class="ManageButton" href="{% url 'manageTrustees' election_id={{election.id}} %}">Manage Trustees</a>
+<a class="ManageButton" href="{% url 'manageVoters' election_id={{election.id}} %}">Manage Voters</a>
+
+{% endblock %}

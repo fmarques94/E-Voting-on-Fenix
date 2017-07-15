@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>Manage Trustees</title>        
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/manageTrustees.css' %}" />
+<script src="{% static 'js/manageTrustees.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<h2>{{election.name}}</h2>
+<a class="button" id="toogleButton" href="javascript:toggleTrusteeList()">Hide Trustee List &#2206</a>
+<div class="TrusteeList">
+    <table>
+        <tr>
+            <th></th>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>PK share</th>
+        </tr>
+        {% for trustee in election.trustee_set.all %}
+        <tr>
+            <td>[<a href="javascript:removeTrustee({{trustee.identifier}})">&#2716</a>]</td>
+            <td>{{trustee.identifier}}</td>
+            <td>{{trustee.name}}</td>
+            <td>{{trustee.email}}</td>
+            {% if trustee.publicKeyShare%}
+            <td style="color:green;">&#2714</td>
+            {% else %}
+            <td style="color:red;">&#2716</td>
+            {% endif%}
+        </tr>
+        {% endfor%}
+    </table>
+</div>
+
+<form action="javascript:submit()">
+    <fieldset>
+        <legend><h2>Add Trustee</h2></legend>
+        <b>Identifier:</b><br>
+        <input type="text" name="identifier" style="width:50%"><br>
+        <b>Name:</b><br>
+        <input type="text" name="name" style="width:50%"><br>
+        <b>Email:</b><br>
+        <input type="email" name="email" style="width:50%"><br><br>
+        <input type="submit" class="button">
+    </fieldset>
+</form>
+{% endblock%}

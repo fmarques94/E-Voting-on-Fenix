@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>Create Election</title>        
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/createElection.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'style/jquery.timepicker.css' %}" />
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script src="{% static 'js/jquery.timepicker.min.js' %}"></script>
+<script src="{% static 'js/createElection.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<form id="createElectionForm" action="javascript:submit()">
+    <fieldset>
+        <legend><h2>Create Election</h2></legend>
+        <b>Name:</b><br>
+        <input type="text" name="name" style="width:50%"><br>
+        <b>Description:</b><br>
+        <textarea name="description" rows="3" style="width:50%"></textarea><br>
+        <b>Start Date:</b><br>
+        <input name="startDate" class="datePicker">&nbsp;<select name="startTime" type="text" class="timePicker"></select><br>
+        <b>End Date:</b><br>
+        <input name="endDate" class="datePicker">&nbsp;<select name="startTime" class="timePicker"></select><br>
+        <b>Define cast times:</b><br>
+        <input type="radio" name="castTimeRadioButton" onclick="enableCastTimes()" checked>Yes
+        <input type="radio" name="castTimeRadioButton" onclick="disableCastTimes()">No <br>
+        <div class="castTime">
+            <b>Start Cast Time:</b><br>
+            <select name="startCastTimes" id="test" class="timePicker"></select><br>
+            <b>End Cast Time:</b><br>
+            <select name="endCastTimes" class="timePicker"></select><br><br>
+        </div>
+        <input type="submit" class="submitButton">
+    </fieldset>
+</form>
+{% endblock %}

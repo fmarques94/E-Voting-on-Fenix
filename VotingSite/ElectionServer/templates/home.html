@@ -6,9 +6,6 @@
 <link rel="stylesheet" type="text/css" href="{% static 'style/home.css' %}" />
 {% endblock %}
 
-{% block header_content %}
-{% endblock %}
-
 {% block content %}
     {% for election in elections %}
         <a href="{% url 'election' election_id=election.id %}">

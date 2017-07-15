@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>Manage Voters</title>        
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/manageVoters.css' %}" />
+{% endblock %}
+
+{% block content %}
+<h2>{{election.name}}</h2>
+<a class="button" id="toogleButton" href="javascript:toggleTrusteeList()">Hide Voters List &#2206</a>
+<div class="TrusteeList">
+    <table>
+        <tr>
+            <th></th>
+            <th>Id</th>
+            <th>Email</th>
+        </tr>
+        {% for voter in election.voter_set.all %}
+        <tr>
+            <td>[<a href="javascript:removeVoter({{voter.identifier}})">&#2716</a>]</td>
+            <td>{{voter.identifier}}</td>
+            <td>{{voter.email}}</td>
+        </tr>
+        {% endfor%}
+    </table>
+</div>
+
+
+
+<form action="javascript:submit()">
+    <fieldset>
+        <legend><h2>Add Voter</h2></legend>
+        <b>Identifier:</b><br>
+        <input type="text" name="identifier" style="width:50%"><br>
+        <b>Email:</b><br>
+        <input type="email" name="email" style="width:50%"><br><br>
+        <input class="button" type="submit">
+    </fieldset>
+</form>
+
+<form action="javascript:fileSubmit()">
+    <fieldset>
+        <legend><h2>Add Voters CSV File</h2></legend>
+        <input type="file" name="csv" accept="*.csv">
+        <input class="button" type="submit">
+    </fieldset>
+</form>
+
+{% endblock%}
