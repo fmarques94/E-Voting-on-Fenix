@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 
 {% block extra_head_block %}
-<title>{{election.name}}</title>        
+<title>{% autoescape on %}{{election.name}}{% endautoescape %}</title>        
 {% load static %}
 <link rel="stylesheet" type="text/css" href="{% static 'style/manageElection.css' %}" />
 {% endblock %}
 
 {% block content %}
-<h2>{{election.name}}</h2>
+<h2>{% autoescape on %}{{election.name}}{% endautoescape %}</h2>
 <table>
     <tr>
         <td>
             <u>Description:</u>
         </td>
         <td>
-            {{election.description}}
+            {% autoescape on %}{{election.description}}{% endautoescape %}
         </td>
     </tr>
     <tr>
@@ -22,7 +22,7 @@
             <u>Start Date:</u>
         </td>
         <td>
-            {{election.startDate}}
+            {{election.startDate|date:"Y-m-d, H:i"}}
         </td>
     </tr>
     <tr>
@@ -30,7 +30,7 @@
             <u>End Date:</u>
         </td>
         <td>
-            {{election.endDate}}
+            {{election.endDate|date:"Y-m-d, H:i"}}
         </td>
     </tr>
     {% if election.openCastTime %}
@@ -39,7 +39,7 @@
             <u>Open Cast Time:</u>
         </td>
         <td>
-            {{election.openCastTime}}
+            {{election.openCastTime|time:"H:i"}}
         </td>
     </tr>
     <tr>
@@ -47,14 +47,14 @@
             <u>Close Cast Time:</u>
         </td>
         <td>
-            {{election.closeCastTime}}
+            {{election.closeCastTime|time:"H:i"}}
         </td>
     </tr>
     {% endif %}
 </table>
 
-<a class="ManageButton" href="{% url 'manageQuestions' election_id={{election.id}} %}">Manage Questions</a>
-<a class="ManageButton" href="{% url 'manageTrustees' election_id={{election.id}} %}">Manage Trustees</a>
-<a class="ManageButton" href="{% url 'manageVoters' election_id={{election.id}} %}">Manage Voters</a>
+<a class="ManageButton" href="{% url 'manageQuestions' election_id=election.id %}">Manage Questions</a>
+<a class="ManageButton" href="{% url 'manageTrustees' election_id=election.id %}">Manage Trustees</a>
+<a class="ManageButton" href="{% url 'manageVoters' election_id=election.id %}">Manage Voters</a>
 
 {% endblock %}

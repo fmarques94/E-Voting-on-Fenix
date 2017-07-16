@@ -4,22 +4,12 @@
 <title>Manage Questions</title>        
 {% load static %}
 <link rel="stylesheet" type="text/css" href="{% static 'style/manageQuestions.css' %}" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script src="{% static 'js/manageQuestions.js' %}"></script>
 {% endblock %}
 
 {% block content %}
 <h2>{{election.name}}</h2>
-<a class="toggleButton" href="javascript:toggleQuestionList()">Hide Question List &#2206</a>
-<div class="QuestionList">
-    <dl>
-        {% for question in election.question_set.all %}
-        <dt>[<a href="javascript:removeQuestion({{question.id}})">&#2716</a>]{{question.text}}</dt>
-            {% for answer in question.answer_set.all %}
-            <dd>{{answer.text}}</dd>
-            {% endfor %}
-        {% endfor %}
-    </dl>
-</div>
 
 <form action="javascript:submit()">
     <fieldset>
@@ -55,5 +45,17 @@
         
     </fieldset>
 </form>
+
+<a class="toggleButton" href="javascript:toggleQuestionList()">Hide Question List</a>
+<div class="QuestionList">
+    <dl>
+        {% for question in election.question_set.all %}
+        <dt>[<a href="javascript:removeQuestion({{question.id}})">X</a>]{% autoescape on %}{{question.text}}{% endautoescape %}</dt>
+            {% for answer in question.answer_set.all %}
+            <dd>{% autoescape on %}{{answer.text}}{% endautoescape %}</dd>
+            {% endfor %}
+        {% endfor %}
+    </dl>
+</div>
 
 {% endblock%}

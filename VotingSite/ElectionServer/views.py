@@ -14,6 +14,7 @@ from django.http import HttpResponse, HttpResponseNotAllowed, Http404, HttpRespo
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.db import transaction
 from django.conf import settings
+from django.urls import reverse
 
 #Models
 from ElectionServer.models import Election 
@@ -48,15 +49,22 @@ def createElection(request):
     def postCreateElection(request):
         try:
             data = json.loads(request.body.decode('utf-8'))
-            parameters = generate_parameters()
             election = Election()
             election.name = data['name']
             election.description = data['description']
-            election.startDate = data['startDate']
-            election.endDate = data['endDate']
-            election.openCastTime = data['openCastTime']
-            election.closeCastTime = data['closeCastTime']
+            election.startDate = data['startDate'] #datetime.datetime.strptime(data['startDate'],'%d-%m-%Y %H:%M')
+            election.endDate = data['endDate']#datetime.datetime.strptime(data['endDate'],'%d-%m-%Y %H:%M')
+            if datetime.datetime.strptime(data['startDate'],'%Y-%m-%d %H:%M') < datetime.datetime.now():
+                return HttpResponse(json.dumps({'error':'The election date is in the past.'})
+            , content_type='application/json', status=406) 
+            if election.endDate <= election.startDate:
+                return HttpResponse(json.dumps({'error':'The election end date must be greater than the election start date.'})
+            , content_type='application/json', status=406) 
+            if 'openCastTime' in data.keys():
+                election.openCastTime = data['openCastTime']
+                election.closeCastTime = data['closeCastTime']
             election.admin = request.user
+            parameters = generate_parameters()
             election.cryptoParameters = {
                 'p':parameters['p'],
                 'q':parameters['q'],
@@ -65,7 +73,8 @@ def createElection(request):
             election.save()
             return HttpResponse(json.dumps({
                 'success':True,
-                'id':str(election.id)
+                'currentUrl':reverse('createElection'),
+                'redirectUrl':reverse('election',args=[str(election.id)])
                 }),content_type='application/json')
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
@@ -87,7 +96,7 @@ def addTrustees(request,election_id):
             election = Election.objects.get(id=election_id)
             if request.user != election.admin:
                 return HttpResponseForbidden("Access denied")
-            if datetime.now() >= election.startDate:
+            if datetime.datetime.now() >= election.startDate:
                 return HttpResponse(json.dumps({'error':'The election has already started. Cannot add trustees now.'}),
              content_type='application/json', status=404)
             data = json.loads(request.body.decode('utf-8'))
@@ -121,7 +130,7 @@ def removeTrustees(request,election_id):
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
-        if datetime.now() >= election.startDate:
+        if datetime.datetime.now() >= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has already started. Cannot remove trustees now.'}),
              content_type='application/json', status=404)
         try:
@@ -205,7 +214,7 @@ def addVoters(request,election_id):
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
-        if datetime.now() >= election.startDate:
+        if datetime.datetime.now() >= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has already started. Cannot add voters now.'}),
              content_type='application/json', status=404)
         if request.FILES:
@@ -226,7 +235,7 @@ def removeVoters(request,election_id):
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
-        if datetime.now() >= election.startDate:
+        if datetime.datetime.now() >= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has already started. Cannot remove voters now.'}),
              content_type='application/json', status=404)
         try:
@@ -267,7 +276,7 @@ def addQuestions(request,election_id):
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
-        if datetime.now() >= election.startDate:
+        if datetime.datetime.now() >= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has already started. Cannot add questions now.'}),
              content_type='application/json', status=404)
         try:
@@ -298,7 +307,7 @@ def removeQuestions(request,election_id):
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
-        if datetime.now() >= election.startDate:
+        if datetime.datetime.now() >= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has already started. Cannot remove questions now.'}),
              content_type='application/json', status=404)
         try:
@@ -338,7 +347,7 @@ def register(request,election_id):
         except Voter.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Voter is not eligible for this election'}),
              content_type='application/json', status=404)
-        if datetime.now() >= election.endDate:
+        if datetime.datetime.now() >= election.endDate:
             return HttpResponse(json.dumps({'error':'The election has ended'}),
              content_type='application/json', status=404)
         payload = {
@@ -377,14 +386,14 @@ def cast(request,election_id):
         except Voter.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Voter is not eligible for this election'}),
              content_type='application/json', status=404)
-        if datetime.now() <= election.startDate:
+        if datetime.datetime.now() <= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has not started'}),
              content_type='application/json', status=404)
-        if datetime.now() >= election.endDate:
+        if datetime.datetime.now() >= election.endDate:
             return HttpResponse(json.dumps({'error':'The election has ended'}),
              content_type='application/json', status=404)
         if election.openCastTime!=None and election.closeCastTime!=None:
-            if datetime.now().time() <= election.openCastTime and datetime.now().time() >= election.closeCastTime:
+            if datetime.datetime.now().time() <= election.openCastTime and datetime.datetime.now().time() >= election.closeCastTime:
                 return HttpResponse(json.dumps({'error':'The ballot box is closed between ' + election.openCastTime + ' and '
                 + election.closeCastTime}),
              content_type='application/json', status=404)
@@ -431,7 +440,7 @@ def manageTrustees(request,election_id):
             raise Http404("Election does not exist")
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
-        #TODO
+        return render(request,'manageTrustees.html',{'election':election})
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -444,7 +453,7 @@ def manageVoters(request,election_id):
             raise Http404("Election does not exist")
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
-        #TODO
+        return render(request,'manageVoters.html',{'election':election})
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -457,7 +466,7 @@ def manageQuestions(request,election_id):
             raise Http404("Election does not exist")
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
-        #TODO
+        return render(request,'manageQuestions.html',{'election':election})
     else:
         return HttpResponseNotAllowed(['GET'])
 

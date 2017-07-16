@@ -16,7 +16,7 @@
                             <strong>Name:</strong>
                         </td>
                         <td>
-                            {{election.name}}
+                            {% autoescape on %}{{election.name}}{% endautoescape %}
                         </td>
                     </tr>
                     <tr>
@@ -24,7 +24,7 @@
                             <strong>Description:</strong>
                         </td>
                         <td>
-                            {{election.description}}
+                            {% autoescape on %}{{election.description}}{% endautoescape %}
                         </td>
                     </tr>
                     <tr>
@@ -32,16 +32,22 @@
                             <strong>Election Date:</strong>
                         </td>
                         <td>
-                            {{election.startDate}} - {{election.endDate}}
+                            {{election.startDate|date:"Y-m-d, H:i"}} until {{election.endDate|date:"Y-m-d, H:i"}}
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <strong>Booth Times:</strong>
                         </td>
+                        {% if election.openCastTime %}
                         <td>
-                            {{election.openCastTime}} - {{election.closeCastTime}}
+                            {{election.openCastTime|time:"H:i"}} until {{election.closeCastTime|date:"H:i"}}
                         </td>
+                        {% else%}
+                        <td>
+                            Open all the time for the duration of the election.
+                        </td>
+                        {% endif %}
                     </tr>
                 </table>
             </div>

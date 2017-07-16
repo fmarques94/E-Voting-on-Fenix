@@ -138,15 +138,18 @@ SOCIAL_AUTH_FENIX_SECRET = '/XHUAmSYHPZkl7pKyZFB/H8ES6aYzttJXVZLAHtpufWFvznNTFrY
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'en-GB'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'GMT'
 
 USE_I18N = True
 
 USE_L10N = True
 
 USE_TZ = True
+
+#DATETIME_INPUT_FORMATS = ['%d-%m-%Y %H:%M']
+#TIME_INPUT_FORMATS = ['%H:%M']
 
 
 # Static files (CSS, JavaScript, Images)

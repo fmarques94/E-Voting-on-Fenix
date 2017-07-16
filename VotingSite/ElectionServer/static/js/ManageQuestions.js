@@ -7,10 +7,10 @@ function addMoreAnswers(){
 }
 
 function toggleQuestionList(){
-    $(".QuestionList").toogle();
-    if($(".QuestionList").is(':hidden')){
-        $(".toggleButton").text('Show Question List &#2207')
+    $(".QuestionList dl").toggle();
+    if($(".QuestionList dl").is(':hidden')){
+        $(".toggleButton").text('Show Question List')
     }else{
-        $(".toggleButton").text('Hide Question List &#2206')
+        $(".toggleButton").text('Hide Question List')
     }
 }

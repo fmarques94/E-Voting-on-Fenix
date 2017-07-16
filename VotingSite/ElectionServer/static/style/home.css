@@ -1,9 +1,9 @@
 .ElectionBox{
-    background-color: #eee9e9;
+    background-color: lightgrey;
     margin-bottom: 10px;
     margin-left: 10px;
 }
 
-#home{
-    text-decoration: underline;
+.content a{
+    text-decoration: none;
 }
