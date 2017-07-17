@@ -38,9 +38,13 @@ function submit(token){
         var url = window.location.toString();
         window.location = url.replace(msg['currentUrl'], msg['redirectUrl']);},
     error: function(xhr, ajaxOptions, thrownError){
-        $('.submitButton').css("display", "block");
-        $('.loader').css("display", "none");
-        alert('Oops: ' + xhr.responseJSON['error']);
+        if(xhr){
+            $('.submitButton').css("display", "block");
+            $('.loader').css("display", "none");
+            alert('Oops: ' + xhr.responseJSON['error']);
+        }else{
+            alert('Oops: An unexpected error occurred. Please contact the administrators');
+        }
     },
     dataType: "json",
     contentType : "application/json",

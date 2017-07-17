@@ -146,7 +146,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
 #DATETIME_INPUT_FORMATS = ['%d-%m-%Y %H:%M']
 #TIME_INPUT_FORMATS = ['%H:%M']

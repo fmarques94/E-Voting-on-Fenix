@@ -12,7 +12,7 @@ from django.contrib.auth import logout
 from django.core import serializers
 from django.http import HttpResponse, HttpResponseNotAllowed, Http404, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.conf import settings
 from django.urls import reverse
 
@@ -100,6 +100,7 @@ def addTrustees(request,election_id):
                 return HttpResponse(json.dumps({'error':'The election has already started. Cannot add trustees now.'}),
              content_type='application/json', status=404)
             data = json.loads(request.body.decode('utf-8'))
+            print(data)
             with transaction.atomic():
                 for trusteeData in data['trusteeList']:
                     trustee = Trustee()
@@ -136,7 +137,7 @@ def removeTrustees(request,election_id):
         try:
             data = json.loads(request.body.decode('utf-8'))
             for trusteeData in data['trusteeList']:
-                Trustee.objects.get(identifier=trusteeData['id'],election=election).delete()
+                Trustee.objects.get(identifier=trusteeData,election=election).delete()
             return HttpResponse(json.dumps({
                 'success':True
                 }),content_type='application/json')
@@ -287,10 +288,13 @@ def addQuestions(request,election_id):
                     question.election = election
                     question.question = questionData['question']
                     question.save()
+                    print("Q saved")
                     for answerData in questionData['answers']:
                         answer = Answer()
+                        answer.question = question
                         answer.answer = answerData
                         answer.save()
+                        print("A saved")
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
         return HttpResponse(json.dumps({'success':True}), content_type='application/json')      
@@ -313,7 +317,7 @@ def removeQuestions(request,election_id):
         try:
             data = json.loads(request.body.decode('utf-8'))
             for questionData in data['questionList']:
-                Question.objects.get(id=questionData['id'],election=election).delete()
+                Question.objects.get(id=questionData,election=election).delete()
         except Question.DoesNotExist:
             pass
         except Exception as exception:

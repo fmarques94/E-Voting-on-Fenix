@@ -10,33 +10,8 @@
 
 {% block content %}
 <h2>{{election.name}}</h2>
-<a class="button" id="toogleButton" href="javascript:toggleTrusteeList()">Hide Trustee List &#2206</a>
-<div class="TrusteeList">
-    <table>
-        <tr>
-            <th></th>
-            <th>Id</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>PK share</th>
-        </tr>
-        {% for trustee in election.trustee_set.all %}
-        <tr>
-            <td>[<a href="javascript:removeTrustee({{trustee.identifier}})">&#2716</a>]</td>
-            <td>{{trustee.identifier}}</td>
-            <td>{{trustee.name}}</td>
-            <td>{{trustee.email}}</td>
-            {% if trustee.publicKeyShare%}
-            <td style="color:green;">&#2714</td>
-            {% else %}
-            <td style="color:red;">&#2716</td>
-            {% endif%}
-        </tr>
-        {% endfor%}
-    </table>
-</div>
 
-<form action="javascript:submit()">
+<form id="addTrusteeForm" action="javascript:submit('{{ csrf_token }}','{% url 'manageTrustees' election_id=election.id %}','{% url 'addTrustees' election_id=election.id %}')">
     <fieldset>
         <legend><h2>Add Trustee</h2></legend>
         <b>Identifier:</b><br>
@@ -48,4 +23,34 @@
         <input type="submit" class="button">
     </fieldset>
 </form>
+
+<a class="button" id="toogleButton" href="javascript:toggleTrusteeList()">Hide Trustee List</a>
+<br><br>
+<div class="TrusteeList">
+    {% if election.trustee_set.all %}
+    <table class="TrusteeTable">
+        <tr>
+            <th></th>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>PK share</th>
+        </tr>
+        {% for trustee in election.trustee_set.all %}
+        <tr>
+            <td>[<a href="javascript:removeTrustee('{{ csrf_token }}','{% url 'manageTrustees' election_id=election.id %}','{% url 'removeTrustees' election_id=election.id %}','{{trustee.identifier}}')">X</a>]</td>
+            <td>{{trustee.identifier}}</td>
+            <td>{{trustee.name}}</td>
+            <td>{{trustee.email}}</td>
+            {% if trustee.publicKeyShare%}
+            <td style="color:green;"><b>YES</b></td>
+            {% else %}
+            <td style="color:red;"><b>NO</b></td>
+            {% endif%}
+        </tr>
+        {% endfor%}
+    </table>
+    {% endif %}
+</div>
+
 {% endblock%}

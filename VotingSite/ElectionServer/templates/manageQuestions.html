@@ -9,9 +9,9 @@
 {% endblock %}
 
 {% block content %}
-<h2>{{election.name}}</h2>
+<h2>{% autoescape on %}{{election.name}}{% endautoescape %}</h2>
 
-<form action="javascript:submit()">
+<form id="addQuestionForm" action="javascript:submit('{{ csrf_token }}','{% url 'manageQuestions' election_id=election.id %}','{% url 'addQuestions' election_id=election.id %}')">
     <fieldset>
         <legend><h2>Add Question</h2></legend>
         <table class="inputTable">
@@ -20,7 +20,7 @@
                     <b>Question:</b>
                 </td>
                 <td>
-                    <input type="text" name="question">
+                    <input type="text" name="question" required>
                 </td>
             </tr>
             <tr>
@@ -28,7 +28,7 @@
                     <b>Answer #1:</b>
                 </td>
                 <td>
-                    <input type="text" name="answer_1">
+                    <input type="text" name="answer_1" required>
                 </td>
             </tr>
             <tr>
@@ -36,13 +36,13 @@
                     <b>Answer #2:</b>
                 </td>
                 <td>
-                    <input type="text" name="answer_2">
+                    <input type="text" name="answer_2" required>
                 </td>
             </tr>
         </table>
         <input class="inlineButton" type="submit" value="Submit">
         <a class="inlineButton" href="javascript:addMoreAnswers()">Add Answer</a>
-        
+        <a class="inlineButton removeAnswersButton" href="javascript:removeAnswers()">Remove Answer</a>
     </fieldset>
 </form>
 
@@ -50,9 +50,9 @@
 <div class="QuestionList">
     <dl>
         {% for question in election.question_set.all %}
-        <dt>[<a href="javascript:removeQuestion({{question.id}})">X</a>]{% autoescape on %}{{question.text}}{% endautoescape %}</dt>
+        <dt>[<a href="javascript:removeQuestion('{{ csrf_token }}','{% url 'manageQuestions' election_id=election.id %}','{% url 'removeQuestions' election_id=election.id %}','{{question.id}}')">X</a>]{% autoescape on %}{{question.question}}{% endautoescape %}</dt>
             {% for answer in question.answer_set.all %}
-            <dd>{% autoescape on %}{{answer.text}}{% endautoescape %}</dd>
+            <dd>{% autoescape on %}{{answer.answer}}{% endautoescape %}</dd>
             {% endfor %}
         {% endfor %}
     </dl>
