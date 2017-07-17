@@ -100,7 +100,6 @@ def addTrustees(request,election_id):
                 return HttpResponse(json.dumps({'error':'The election has already started. Cannot add trustees now.'}),
              content_type='application/json', status=404)
             data = json.loads(request.body.decode('utf-8'))
-            print(data)
             with transaction.atomic():
                 for trusteeData in data['trusteeList']:
                     trustee = Trustee()
@@ -167,7 +166,7 @@ def addVoters(request,election_id):
 
     def addVotersFile(request,election):
         try:
-            csvfile = request.FILES['voters']
+            csvfile = request.FILES['csv']
             reader = csv.reader(csvfile.read().decode('utf-8-sig').split('\n'),delimiter=";")
             with transaction.atomic():
                 for row in reader:
@@ -242,7 +241,7 @@ def removeVoters(request,election_id):
         try:
             data = json.loads(request.body.decode('utf-8'))
             for voterData in data['voterList']:
-                    Voter.objects.get(id=voterData['id'],election=election).delete()
+                Voter.objects.get(identifier=voterData,election=election).delete()
             return HttpResponse(json.dumps({
                 'success':True
                 }),content_type='application/json') 

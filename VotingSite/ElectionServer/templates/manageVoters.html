@@ -5,31 +5,13 @@
 {% load static %}
 <link rel="stylesheet" type="text/css" href="{% static 'style/manageVoters.css' %}" />
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="{% static 'js/manageVoters.js' %}"></script>
 {% endblock %}
 
 {% block content %}
 <h2>{{election.name}}</h2>
-<a class="button" id="toogleButton" href="javascript:toggleTrusteeList()">Hide Voters List &#2206</a>
-<div class="TrusteeList">
-    <table>
-        <tr>
-            <th></th>
-            <th>Id</th>
-            <th>Email</th>
-        </tr>
-        {% for voter in election.voter_set.all %}
-        <tr>
-            <td>[<a href="javascript:removeVoter({{voter.identifier}})">&#2716</a>]</td>
-            <td>{{voter.identifier}}</td>
-            <td>{{voter.email}}</td>
-        </tr>
-        {% endfor%}
-    </table>
-</div>
 
-
-
-<form action="javascript:submit()">
+<form id="addVoterForm" action="javascript:submit('{{ csrf_token }}','{% url 'manageVoters' election_id=election.id %}','{% url 'addVoters' election_id=election.id %}')">
     <fieldset>
         <legend><h2>Add Voter</h2></legend>
         <b>Identifier:</b><br>
@@ -40,12 +22,32 @@
     </fieldset>
 </form>
 
-<form action="javascript:fileSubmit()">
+<form id="addVoterFileForm" action="javascript:fileSubmit('{{ csrf_token }}','{% url 'manageVoters' election_id=election.id %}','{% url 'addVoters' election_id=election.id %}')">
     <fieldset>
         <legend><h2>Add Voters CSV File</h2></legend>
-        <input type="file" name="csv" accept="*.csv">
+        <input type="file" name="csv" accept=".csv" required>
         <input class="button" type="submit">
     </fieldset>
 </form>
+
+<a class="button" id="toogleButton" href="javascript:toggleVoterList()">Hide Voters List</a><br><br>
+<div class="VoterList">
+    {% if election.voter_set.all %}
+    <table>
+        <tr>
+            <th></th>
+            <th>Id</th>
+            <th>Email</th>
+        </tr>
+        {% for voter in election.voter_set.all %}
+        <tr>
+            <td>[<a href="javascript:removeVoter('{{ csrf_token }}','{% url 'manageVoters' election_id=election.id %}','{% url 'removeVoters' election_id=election.id %}','{{voter.identifier}}')">X</a>]</td>
+            <td>{{voter.identifier}}</td>
+            <td>{{voter.email}}</td>
+        </tr>
+        {% endfor%}
+    </table>
+    {% endif %}
+</div>
 
 {% endblock%}
