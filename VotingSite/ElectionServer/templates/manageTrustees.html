@@ -27,6 +27,10 @@
 <a class="button" id="toogleButton" href="javascript:toggleTrusteeList()">Hide Trustee List</a>
 <br><br>
 <div class="TrusteeList">
+    <h3>{{keyShares|length}} out of {{election.trustee_set.count}} have submitted their key share</h3>
+    {% if keyShares|length > 0 %}
+    <a class="button" id="generateKeyButton" href="javascript:aggregateKey({{keyShares}})">Generate Election Public Key</a>
+    {% endif %}
     {% if election.trustee_set.all %}
     <table class="TrusteeTable">
         <tr>
@@ -34,7 +38,7 @@
             <th>Id</th>
             <th>Name</th>
             <th>Email</th>
-            <th>PK share</th>
+            <th>Public Key share</th>
         </tr>
         {% for trustee in election.trustee_set.all %}
         <tr>
@@ -42,7 +46,7 @@
             <td>{{trustee.identifier}}</td>
             <td>{{trustee.name}}</td>
             <td>{{trustee.email}}</td>
-            {% if trustee.publicKeyShare%}
+            {% if trustee.identifier in keyShares.keys %}
             <td style="color:green;"><b>YES</b></td>
             {% else %}
             <td style="color:red;"><b>NO</b></td>

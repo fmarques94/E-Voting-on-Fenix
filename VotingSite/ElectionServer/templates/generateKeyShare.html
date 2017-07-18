@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>Manage Voters</title>        
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/generateKeyShare.css' %}" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="{% static 'js/jsbn.js' %}"></script>
+<script src="{% static 'js/jsbn2.js' %}"></script>
+<script src="{% static 'js/ElGamal.js' %}"></script>
+<script src="{% static 'js/generateKeyShare.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<h2>{{election.name}}</h2>
+{% if hasKeyShare %}
+    <div class="message">
+        <h3>You have already given your key share. Please wait until the end of the election.</h3>
+    </div>
+{% else %}
+    {% if started %}
+    <div class="message">
+        <h3>You did not participate in the key generation on time.</h3>
+    </div>
+    {% else %}
+    <div id="keyShare">
+        <a class="button" id="generateKeyShareButton" href="javascript:generateKeyShare({{election.cryptoParameters}},{{trustee.publicKeyShare}},'{{csrf_token}}')">Generate Key Share</a>
+    </div>
+    {% endif %}
+{% endif %}
+
+{% endblock %}

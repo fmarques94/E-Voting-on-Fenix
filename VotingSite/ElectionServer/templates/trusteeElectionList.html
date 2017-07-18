@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>Trusted Elections</title>        
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/home.css' %}" />
+{% endblock %}
+
+{% block content %}
+{% if trustee %}
+    {% for trusteeObject in trustee %}
+        <a href="{% url 'trustee' election_id=trusteeObject.election.id %}">
+            <div class='ElectionBox'>
+                <table>
+                    <tr>
+                        <td>
+                            <strong>Name:</strong>
+                        </td>
+                        <td>
+                            {% autoescape on %}{{trusteeObject.election.name}}{% endautoescape %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>Description:</strong>
+                        </td>
+                        <td>
+                            {% autoescape on %}{{trusteeObject.election.description}}{% endautoescape %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>Election Date:</strong>
+                        </td>
+                        <td>
+                            {{trusteeObject.election.startDate|date:"Y-m-d, H:i"}} until {{trusteeObject.election.endDate|date:"Y-m-d, H:i"}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>Booth Times:</strong>
+                        </td>
+                        {% if election.openCastTime %}
+                        <td>
+                            {{trusteeObject.election.openCastTime|time:"H:i"}} until {{trusteeObject.election.closeCastTime|date:"H:i"}}
+                        </td>
+                        {% else%}
+                        <td>
+                            Open all the time for the duration of the election.
+                        </td>
+                        {% endif %}
+                    </tr>
+                </table>
+            </div>
+        </a>
+    {% endfor %}
+{% else %}
+    <p>You are currently not a trustee in any election.</p>
+{% endif %}
+{% endblock %}

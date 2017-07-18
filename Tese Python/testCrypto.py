@@ -1,6 +1,7 @@
 import ElGamal
 import Schnorr
 import ParameterGenerator
+import secrets
 
 def testSchnorr():
     print("Testing Schnorr")
@@ -98,22 +99,55 @@ nTests = 1
 for i in range(nTests):
     print("Generating parameters")
 
-    parameters = None
+    #parameters = {'p':2579,
+	#'g':2}
 
     parameters = ParameterGenerator.generate_parameters()
-
+        
     assert parameters
+    elgamal = ElGamal.ElGamal()
+    elgamal.generate_keys(parameters)
+	
+    x = elgamal.keys["priv"]["d"]
+    h = elgamal.keys["pub"]["y"]
+    #print("h="+str(h))
+    #print("x="+str(x))
+    p = parameters['p']
+    g = parameters['g']
+	
+    e = secrets.randbelow(p)
+    k = secrets.randbelow(p)
+	
+    r = pow(g,k,p)
+	
+    print('Testing multiplication')
+    s = k + x*e
+
+	#r = g^k mod p = (g^(k+xe) * g(-xe) mod p = g^s*h^-e mod p
+	
+    aux = (pow(g,s,p)*pow(pow(h,p-2,p),e,p))%p
+	
+    print(r == aux)
+    print("r="+str(r))
+    print("aux="+str(aux))
+    #print("aux1="+str(aux1))
+    #print("aux2="+str(aux2))
+    print("h="+str(h))
+    print("e="+str(e))
+    print("s="+str(s))
+    print("k="+str(k))
+
 
     #print("Generated parameters")
     #print(parameters)
     #print("")
-
-    testElGamal()
+    
+    #testElGamal()
     #testSchnorr()
 
-    testSharedSecret()
+    #testSharedSecret()
 
-print("")
-print("Tests Ended with Success")
+#print("")
+#print("Tests Ended with Success")
 
 

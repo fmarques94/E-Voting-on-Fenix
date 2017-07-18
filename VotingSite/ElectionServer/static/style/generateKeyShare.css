@@ -15,11 +15,7 @@
     background-color: #424040;
 }
 
-#generateKeyButton{
-    display: inline-block;
-}
-
-.TrusteeTable{
-    width: 100%;
-    text-align: center;
+.message{
+    border: 1px solid #424040;
+    word-break: break-all;
 }

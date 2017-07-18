@@ -4,6 +4,8 @@ import requests
 import csv
 import requests
 import datetime
+import secrets
+import ast
 
 #Django
 from django.shortcuts import render
@@ -66,9 +68,9 @@ def createElection(request):
             election.admin = request.user
             parameters = generate_parameters()
             election.cryptoParameters = {
-                'p':parameters['p'],
-                'q':parameters['q'],
-                'g':parameters['g']
+                "p":str(parameters['p']),
+                "q":str(parameters['q']),
+                "g":str(parameters['g'])
             }
             election.save()
             return HttpResponse(json.dumps({
@@ -107,6 +109,7 @@ def addTrustees(request,election_id):
                     trustee.identifier = trusteeData['id']
                     trustee.name = trusteeData['name']
                     trustee.email = trusteeData['email']
+                    trustee.publicKeyShare = json.dumps({"random":str(secrets.randbelow(int(ast.literal_eval(election.cryptoParameters)['p'])))})
                     trustee.save()
             return HttpResponse(json.dumps({'success':True}),content_type='application/json') 
         except Election.DoesNotExist:
@@ -115,7 +118,7 @@ def addTrustees(request,election_id):
             return HttpResponse(json.dumps({'error':'Trustee '+ trusteeData['id'] + ' already present'})
             , content_type='application/json', status=404)
         except Exception as exception:
-            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
     else:
         return HttpResponseNotAllowed(['POST'])
 
@@ -443,7 +446,11 @@ def manageTrustees(request,election_id):
             raise Http404("Election does not exist")
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
-        return render(request,'manageTrustees.html',{'election':election})
+        keyshares = {}
+        for trustee in Trustee.objects.filter(election=election):
+            if 'pk' in json.loads(trustee.publicKeyShare):
+                keyshares[trustee.identifier] = trustee.publicKeyShare
+        return render(request,'manageTrustees.html',{'election':election,'keyShares': keyshares})
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -473,3 +480,56 @@ def manageQuestions(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET'])
 
+@login_required
+def trustee(request,election_id):
+
+    def getMethodTrustee(election,trustee):
+        if datetime.datetime.now() < election.startDate:
+            return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee,'hasKeyShare':'pk' in json.loads(trustee.publicKeyShare)})
+        elif datetime.datetime.now() > election.endDate:
+            return render(request,'partialDecrypt.html',{'election':election,'trustee':trustee, 'hasKeyShare':'pk' in json.loads(trustee.publicKeyShare)})
+        else:
+            return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee, 'hasKeyShare':'pk' in json.loads(trustee.publicKeyShare), 'started':True})
+
+    def postMethodTrustee(election,trustee):
+        if datetime.datetime.now() < election.startDate:
+            if 'pk' in json.loads(trustee.publicKeyShare):
+                return HttpResponse(json.dumps({'error':'You have already generated a key share'}), content_type='application/json')
+            else:
+                data = json.loads(request.body.decode('utf-8'))
+                if 'pk' in data:
+                    trustee.publicKeyShare = data
+                    try:
+                        trustee.save()
+                    except Exception as exception:
+                        return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+                    return HttpResponse(json.dumps({'success':True}), content_type='application/json')
+                else:
+                    return HttpResponse(json.dumps({'error':'Bad json. Does not have necessary elements.'}), content_type='application/json')
+        elif datetime.datetime.now() > election.endDate:
+            return
+        else:
+            return HttpResponseForbidden("Access denied")
+
+    try:
+        election = Election.objects.get(id=election_id)
+    except Election.DoesNotExist:
+        raise Http404("Election does not exist")
+    try:
+        trustee = Trustee.objects.get(election=election,identifier=request.user)
+    except Trustee.DoesNotExist:
+        return HttpResponseForbidden("Access denied")
+    if request.method == 'GET':
+        return getMethodTrustee(election,trustee)
+    elif request.method == 'POST':
+        return postMethodTrustee(election,trustee)
+    else:
+        return HttpResponseNotAllowed(['GET','POST'])
+
+@login_required
+def trusteeElectionList(request):
+    if request.method == 'GET':
+        trustee = Trustee.objects.filter(identifier=request.user)
+        return render(request,'trusteeElectionList.html',{'trustee':trustee})
+    else:
+        return HttpResponseNotAllowed(['GET'])
