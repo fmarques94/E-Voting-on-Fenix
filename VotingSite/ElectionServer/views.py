@@ -79,7 +79,7 @@ def createElection(request):
                 'redirectUrl':reverse('election',args=[str(election.id)])
                 }),content_type='application/json')
         except Exception as exception:
-            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
     
     if request.method == 'POST':
         return postCreateElection(request)
@@ -146,7 +146,7 @@ def removeTrustees(request,election_id):
         except Trustee.DoesNotExist:
             pass
         except Exception as exception:
-            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')  
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)  
     else:
         return HttpResponseNotAllowed(['POST'])
 
@@ -184,7 +184,7 @@ def addVoters(request,election_id):
                 'error':'Voter with id ' + row[0] + 'is already in the election'
                 }), content_type='application/json')
         except Exception as exception:
-            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
         return HttpResponse(json.dumps({
                 'success':True
                 }), content_type='application/json')
@@ -205,7 +205,7 @@ def addVoters(request,election_id):
                 'error':'Voter with id ' + voterData['id'] + 'is already in the election'
                 }), content_type='application/json')
         except Exception as exception:
-            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
         return HttpResponse(json.dumps({
                 'success':True
                 }), content_type='application/json')
@@ -251,7 +251,7 @@ def removeVoters(request,election_id):
         except Voter.DoesNotExist:
             pass
         except Exception as exception:
-            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')  
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)  
     else:
         return HttpResponseNotAllowed(['POST'])
 
@@ -298,7 +298,7 @@ def addQuestions(request,election_id):
                         answer.save()
                         print("A saved")
         except Exception as exception:
-            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
         return HttpResponse(json.dumps({'success':True}), content_type='application/json')      
     else:
         return HttpResponseNotAllowed(['POST'])
@@ -323,7 +323,7 @@ def removeQuestions(request,election_id):
         except Question.DoesNotExist:
             pass
         except Exception as exception:
-            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
         return HttpResponse(json.dumps({'success':True}), content_type='application/json')      
     else:
         return HttpResponseNotAllowed(['POST'])
@@ -371,7 +371,7 @@ def register(request,election_id):
             voter.publicCredential = data['publicCredential']
             voter.save()
         except Exception as exception:
-            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
         return HttpResponse(json.dumps({
                 'success':True
                 }),content_type='application/json')
@@ -418,7 +418,7 @@ def cast(request,election_id):
                 ballot.ballot = data['ballot']
                 ballot.save()
             except Exception as exception:
-                return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+                return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
             return HttpResponse(json.dumps({
                     'success':True
                     }),content_type='application/json')
@@ -502,7 +502,7 @@ def trustee(request,election_id):
                     try:
                         trustee.save()
                     except Exception as exception:
-                        return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json')
+                        return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
                     return HttpResponse(json.dumps({'success':True}), content_type='application/json')
                 else:
                     return HttpResponse(json.dumps({'error':'Bad json. Does not have necessary elements.'}), content_type='application/json')
@@ -533,3 +533,33 @@ def trusteeElectionList(request):
         return render(request,'trusteeElectionList.html',{'trustee':trustee})
     else:
         return HttpResponseNotAllowed(['GET'])
+
+@login_required
+def addElectionPublicKey(request,election_id):
+    if request.method == 'POST':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            raise Http404("Election does not exist")
+        if election.admin!=request.user:
+            return HttpResponseForbidden("Access denied")
+        if datetime.datetime.now() >= election.startDate:
+            return HttpResponse(json.dumps({'error':'The election has already started. Cannot set the public key.'}),
+             content_type='application/json', status=404)
+        if election.publicKey:
+            return HttpResponse(json.dumps({'error':'The election already has a public key'}),
+             content_type='application/json', status=404)
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            if 'pk' in data:
+                election.publicKey = data['pk']
+                election.save()
+                return HttpResponse(json.dumps({'sucess':True}),
+             content_type='application/json')
+            else:
+                return HttpResponse(json.dumps({'error':'The json is not well formed.'}),
+             content_type='application/json', status=404)
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
+    else:
+        return HttpResponseNotAllowed(['POST'])

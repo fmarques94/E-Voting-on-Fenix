@@ -35,7 +35,7 @@ function generateKeyShare(cryptoParam,publicKeyShare,token){
     //console.log(aux.toString(10)==r.toString(10))
 
     payload = {
-        "pk": keys[0],
+        "pk": h.toString(16),
         "proof":{
             "e": publicKeyShare["random"],
             "r": r.toString(10),
