@@ -69,3 +69,28 @@ function submit(token,currentUrl,redirectUrl){
     contentType : "application/json",
     });
 }
+
+function aggregateKey(token,keyShares,cryptoParameters){
+    p = new BigInteger(cryptoParameters['p'],10);
+    g = new BigInteger(cryptoParameters['g'],10);
+    for(i=0;i<Object.keys(keyShares).length;i++){
+        share = keyShares[Object.keys(keyShares)[i]]
+        h = new BigInteger(share['pk'],10)
+        e = new BigInteger(share['proof']['e'],10)
+        s = new BigInteger(share['proof']['s'],10)
+
+        aux = (
+            g.modPow(s,p).multiply(
+                (h.modPow(p.subtract(new BigInteger('2',10)),p)).modPow(e,p)
+            )
+        ).mod(p)
+
+        console.log(aux.toString(10))
+        console.log(share['proof']['r'])
+        if(aux.toString(10)==share['proof']['r']){
+            console.log('It\'s working')
+        }else{
+            alert('Oops: The proof of trustee ' + Object.keys(keyShares)[i] + 'failed. Aborting...');
+        }
+    }
+}

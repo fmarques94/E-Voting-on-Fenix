@@ -448,8 +448,8 @@ def manageTrustees(request,election_id):
             return HttpResponseForbidden("Access denied")
         keyshares = {}
         for trustee in Trustee.objects.filter(election=election):
-            if 'pk' in json.loads(trustee.publicKeyShare):
-                keyshares[trustee.identifier] = trustee.publicKeyShare
+            if 'pk' in json.loads(trustee.publicKeyShare.replace('\'','"')):
+                keyshares[trustee.identifier] = json.loads(trustee.publicKeyShare.replace('\'','"'))
         return render(request,'manageTrustees.html',{'election':election,'keyShares': keyshares})
     else:
         return HttpResponseNotAllowed(['GET'])

@@ -5,6 +5,8 @@
 {% load static %}
 <link rel="stylesheet" type="text/css" href="{% static 'style/manageTrustees.css' %}" />
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="{% static 'js/jsbn.js' %}"></script>
+<script src="{% static 'js/jsbn2.js' %}"></script>
 <script src="{% static 'js/manageTrustees.js' %}"></script>
 {% endblock %}
 
@@ -29,7 +31,7 @@
 <div class="TrusteeList">
     <h3>{{keyShares|length}} out of {{election.trustee_set.count}} have submitted their key share</h3>
     {% if keyShares|length > 0 %}
-    <a class="button" id="generateKeyButton" href="javascript:aggregateKey({{keyShares}})">Generate Election Public Key</a>
+    <a class="button" id="generateKeyButton" href="javascript:aggregateKey('{{ csrf_token }}',{{keyShares}},{{election.cryptoParameters}})">Generate Election Public Key</a>
     {% endif %}
     {% if election.trustee_set.all %}
     <table class="TrusteeTable">

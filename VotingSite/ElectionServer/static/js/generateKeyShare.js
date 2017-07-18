@@ -26,16 +26,24 @@ function generateKeyShare(cryptoParam,publicKeyShare,token){
     s = k.add(x.multiply(e))
 
     //Isto é para mover para a zona de verificação da prova.
-    aux = (
-        g.modPow(s,p).multiply(
-            (h.modPow(p.subtract(new BigInteger('2',10)),p)).modPow(e,p)
-        )
-    ).mod(p)
+    //aux = (
+    //    g.modPow(s,p).multiply(
+    //        (h.modPow(p.subtract(new BigInteger('2',10)),p)).modPow(e,p)
+    //    )
+    //).mod(p)
 
-    console.log(aux.toString(10)==r.toString(10))
+    //console.log(aux.toString(10)==r.toString(10))
 
+    payload = {
+        "pk": keys[0],
+        "proof":{
+            "e": publicKeyShare["random"],
+            "r": r.toString(10),
+            "s": s.toString(10)
+        }
+    }
 
-    /*$.ajaxSetup({headers: { "X-CSRFToken": token }});
+    $.ajaxSetup({headers: { "X-CSRFToken": token }});
     console.log('Seding request now!');
     $.ajax({
     type: "POST",
@@ -59,6 +67,6 @@ function generateKeyShare(cryptoParam,publicKeyShare,token){
     },
     dataType: "json",
     contentType : "application/json",
-    });*/
+    });
 
 }
