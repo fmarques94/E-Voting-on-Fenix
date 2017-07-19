@@ -8,7 +8,7 @@
 
 {% block content %}
     {% for election in elections %}
-        <a href="{% url 'election' election_id=election.id %}">
+        <a href="{% url 'bulletinBoard' election_id=election.id %}">
             <div class='ElectionBox'>
                 <table>
                     <tr>

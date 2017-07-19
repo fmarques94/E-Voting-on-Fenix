@@ -485,15 +485,15 @@ def trustee(request,election_id):
 
     def getMethodTrustee(election,trustee):
         if datetime.datetime.now() < election.startDate:
-            return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee,'hasKeyShare':'pk' in json.loads(trustee.publicKeyShare)})
+            return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee,'hasKeyShare':'pk' in json.loads(trustee.publicKeyShare.replace('\'','"'))})
         elif datetime.datetime.now() > election.endDate:
-            return render(request,'partialDecrypt.html',{'election':election,'trustee':trustee, 'hasKeyShare':'pk' in json.loads(trustee.publicKeyShare)})
+            return render(request,'partialDecrypt.html',{'election':election,'trustee':trustee, 'hasKeyShare':'pk' in json.loads(trustee.publicKeyShare.replace('\'','"'))})
         else:
-            return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee, 'hasKeyShare':'pk' in json.loads(trustee.publicKeyShare), 'started':True})
+            return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee, 'hasKeyShare':'pk' in json.loads(trustee.publicKeyShare.replace('\'','"')), 'started':True})
 
     def postMethodTrustee(election,trustee):
         if datetime.datetime.now() < election.startDate:
-            if 'pk' in json.loads(trustee.publicKeyShare):
+            if 'pk' in json.loads(trustee.publicKeyShare.replace('\'','"')):
                 return HttpResponse(json.dumps({'error':'You have already generated a key share'}), content_type='application/json')
             else:
                 data = json.loads(request.body.decode('utf-8'))
@@ -563,3 +563,18 @@ def addElectionPublicKey(request,election_id):
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
     else:
         return HttpResponseNotAllowed(['POST'])
+
+@login_required
+def bulletinBoard(request,election_id):
+    if request.method == 'GET':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            raise Http404("Election does not exist")
+        keyshares = {}
+        for trustee in Trustee.objects.filter(election=election):
+            if 'pk' in json.loads(trustee.publicKeyShare.replace('\'','"')):
+                keyshares[trustee.identifier] = json.loads(trustee.publicKeyShare.replace('\'','"'))
+        return render(request,'bulletinBoard.html',{'election':election,'keyShares':keyshares})
+    else:
+        return HttpResponseNotAllowed(['GET'])

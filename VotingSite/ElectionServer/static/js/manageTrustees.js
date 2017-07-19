@@ -1,9 +1,9 @@
 function toggleTrusteeList(){
     $(".TrusteeList").toggle();
     if($(".TrusteeList").is(':hidden')){
-        $("#toggleButton").text('Show Trustee List &#2207')
+        $("#toggleButton").text('Show Trustee List')
     }else{
-        $("#toggleButton").text('Hide Trustee List &#2206')
+        $("#toggleButton").text('Hide Trustee List')
     }
 }
 

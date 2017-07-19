@@ -27,6 +27,7 @@ urlpatterns = [
     url(r'^election/(?P<election_id>'+uuidRegEx+')/register/$', views.register, name='register'),
     url(r'^election/(?P<election_id>'+uuidRegEx+')/cast/$', views.cast, name='cast'),
     url(r'^election/(?P<election_id>'+uuidRegEx+')/setPublicKey/$', views.addElectionPublicKey, name='setPublicKey'),
+    url(r'^election/(?P<election_id>'+uuidRegEx+')/bulletinBoard/$', views.bulletinBoard, name='bulletinBoard'),
     url(r'^trusteeElectionList/$', views.trusteeElectionList, name='trustee'),
     url(r'^election/(?P<election_id>'+uuidRegEx+')/trustee/$', views.trustee, name='trustee'),
     url(r'^login/$', views.login, name='login'),

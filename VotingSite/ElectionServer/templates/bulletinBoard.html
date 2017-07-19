@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>{{election.name}}</title>        
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/bulletinBoard.css' %}" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="{% static 'js/bulletinBoard.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<h2>{{election.name}}</h2>
+<table>
+    <tr>
+        <td>
+            <u class="rowIdentifier">Description:</u>
+        </td>
+        <td>
+            {% autoescape on %}{{election.description}}{% endautoescape %}
+        </td>
+    </tr>
+    <tr>
+        <td class="rowIdentifier">
+            <u>Start Date:</u>
+        </td>
+        <td>
+            {{election.startDate|date:"Y-m-d, H:i"}}
+        </td>
+    </tr>
+    <tr>
+        <td class="rowIdentifier">
+            <u>End Date:</u>
+        </td>
+        <td>
+            {{election.endDate|date:"Y-m-d, H:i"}}
+        </td>
+    </tr>
+    {% if election.openCastTime %}
+    <tr>
+        <td class="rowIdentifier">
+            <u>Open Cast Time:</u>
+        </td>
+        <td>
+            {{election.openCastTime|time:"H:i"}}
+        </td>
+    </tr>
+    <tr>
+        <td class="rowIdentifier">
+            <u>Close Cast Time:</u>
+        </td>
+        <td>
+            {{election.closeCastTime|time:"H:i"}}
+        </td>
+    </tr>
+    {% endif %}
+    {% if election.publicKey %}
+    <tr>
+        <td class="rowIdentifier">
+            <u>Public Key:</u>
+        </td>
+        <td>
+            <span class="key">{{election.publicKey}}</span>
+        </td>
+    </tr>
+    {% endif %}
+</table>
+<br>
+<a class="ToggleButton" id="toggleButtonTrustees" href="javascript:togglePublicKeyShares()">Show Trustees Public Shares</a>
+<a class="ToggleButton" id="toggleButtonVoters" href="javascript:toggleEligibleVoters()">Show Eligible Voters</a>
+<br><br>
+<div id="eligibleVoters">
+    <table>
+        <tr>
+            <th class="rowIdentifier">
+                Voter Identifier
+            </th>
+            <th>
+                Smart Ballot Tracker    
+            </th>
+        </tr>
+        {% for voter in election.voter_set.all %}
+        <tr>
+            <td class="rowIdentifier" id="identifier">
+                {{voter.identifier}}
+            </td>
+            <td>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div id="trusteesPublicShares">
+    <table>
+        <tr>
+            <th class="rowIdentifier">
+                Trustee Identifier
+            </th>
+            <th>
+                Public Key Share
+            </th>
+        </tr>
+        {% for key, value in keyShares.items %}
+        <tr>
+            <td class="rowIdentifier" id="identifier">
+                {{key}}
+            </td>
+            <td>
+                <span class="key">{{value.pk}}</span>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+{% endblock %}

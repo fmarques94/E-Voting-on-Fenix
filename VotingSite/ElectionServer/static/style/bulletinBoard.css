@@ -1,0 +1,47 @@
+.key{
+    word-break: break-all;
+}
+
+.ToggleButton{
+    background-color: #696969;
+    display: inline-block;
+    border: none;
+    color: white;
+    font-weight: bold;
+    padding: 10px 15px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    margin: 2px 2px 2px 2px;
+    cursor: pointer;
+}
+
+.ToggleButton:hover{
+    background-color: #424040;
+}
+
+table{
+    border: 1px solid darkgray;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.rowIdentifier{
+    width: 25%;
+}
+
+#identifier{
+    text-align: center;
+}
+
+#identifier{
+    border-right: 1px solid darkgray;
+}
+
+#eligibleVoters tr{
+    border-bottom: 1px solid darkgray;
+}
+
+#trusteesPublicShares tr{
+    border-bottom: 1px solid darkgray;
+}
