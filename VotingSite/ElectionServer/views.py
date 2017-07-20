@@ -335,8 +335,20 @@ def getQuestions(request,election_id):
             election = Election.objects.get(id=election_id)
         except Election.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
-        data = serializers.serialize('json',list(Question.objects.all().filter(election=election)))
-        return HttpResponse(data,content_type='application/json')
+        data = {"questionList":[]}
+        for question in Question.objects.all().filter(election=election):
+            questionData = {}
+            questionData["id"] = str(question.id)
+            questionData["question"] = question.question
+            questionData["answers"] = []
+            for answer in Answer.objects.all().filter(question=question):
+                answerData = {}
+                answerData["id"] = answer.id
+                answerData["answer"] = answer.answer
+                questionData["answers"].append(answerData)
+            data["questionList"].append(questionData)
+        #data = serializers.serialize('json',list(Question.objects.all().filter(election=election)))
+        return HttpResponse(json.dumps(data),content_type='application/json')
     else:
         return HttpResponseNotAllowed(['GET'])
 
