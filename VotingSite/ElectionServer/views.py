@@ -341,11 +341,8 @@ def getQuestions(request,election_id):
             questionData["id"] = str(question.id)
             questionData["question"] = question.question
             questionData["answers"] = []
-            for answer in Answer.objects.all().filter(question=question):
-                answerData = {}
-                answerData["id"] = answer.id
-                answerData["answer"] = answer.answer
-                questionData["answers"].append(answerData)
+            for answer in Answer.objects.all().filter(question=question).order_by('id'):
+                questionData["answers"].append(answer.answer)
             data["questionList"].append(questionData)
         #data = serializers.serialize('json',list(Question.objects.all().filter(election=election)))
         return HttpResponse(json.dumps(data),content_type='application/json')

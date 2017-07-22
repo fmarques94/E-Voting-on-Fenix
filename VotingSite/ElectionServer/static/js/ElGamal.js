@@ -14,7 +14,7 @@ function ElGamal(p,g,h){
         c1 = this.g.modPow(k,p)
         value = new BigInteger(encrypt.toString(),10)
         c2 = ((this.h.modPow(k,this.p)).multiply(this.g.modPow(value,this.p))).mod(this.p)
-        return [c1,c2]
+        return [c1,c2,k]
     }
 
     this.generateNumberBelowP = function(p){
