@@ -365,18 +365,19 @@ def register(request,election_id):
         if datetime.datetime.now() >= election.endDate:
             return HttpResponse(json.dumps({'error':'The election has ended'}),
              content_type='application/json', status=404)
-        payload = {
-            'election':election.id,
-            'electionName': election.name,
-            'cryptoParameters':election.cryptoParameters,
-            'voter':voter.identifier,
-            'email':voter.email,
-        }
-        r = requests.json(settings.CREDENTIAL_AUTHORITY,json=payload)
-        if r.status!=200:
-            return HttpResponse(json.dumps({'error':r.status}),content_type='application/json')
-        data = json.loads(r.json())
         try:
+            cryptoParameters = json.loads(election.cryptoParameters.replace('\'','"'))
+            payload = {
+                'election':str(election.id),
+                'electionName': election.name,
+                'cryptoParameters':{"p":cryptoParameters['p'],"g":cryptoParameters['g'],"q":cryptoParameters['q']},
+                'voter':voter.identifier,
+                'email':voter.email,
+            }
+            r = requests.post(settings.CREDENTIAL_AUTHORITY,data=json.dumps(payload))
+            if r.status_code!=200:
+                return HttpResponse(json.dumps({'error':str(r.status_code) + 'from credential Authority'}),content_type='application/json', status=r.status_code)
+            data = r.json()
             voter.publicCredential = data['publicCredential']
             voter.save()
         except Exception as exception:
@@ -391,22 +392,22 @@ def register(request,election_id):
 @login_required
 @csrf_exempt
 def cast(request,election_id):
+    try:
+        election = Election.objects.get(id=election_id)
+    except Election.DoesNotExist:
+        return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+    try:
+        voter = Voter.objects.get(identifier=request.user,election=election)
+    except Voter.DoesNotExist:
+        return HttpResponse(json.dumps({'error':'Voter is not eligible for this election'}),
+            content_type='application/json', status=404)
     if request.method == 'POST':
-        try:
-            election = Election.objects.get(id=election_id)
-        except Election.DoesNotExist:
-            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
-        try:
-            voter = Voter.objects.get(identifier=request.user,election=election)
-        except Voter.DoesNotExist:
-            return HttpResponse(json.dumps({'error':'Voter is not eligible for this election'}),
-             content_type='application/json', status=404)
         if datetime.datetime.now() <= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has not started'}),
              content_type='application/json', status=404)
         if datetime.datetime.now() >= election.endDate:
             return HttpResponse(json.dumps({'error':'The election has ended'}),
-             content_type='application/json', status=404)
+            content_type='application/json', status=404)
         if election.openCastTime!=None and election.closeCastTime!=None:
             if datetime.datetime.now().time() <= election.openCastTime and datetime.datetime.now().time() >= election.closeCastTime:
                 return HttpResponse(json.dumps({'error':'The ballot box is closed between ' + election.openCastTime + ' and '
@@ -431,8 +432,22 @@ def cast(request,election_id):
             return HttpResponse(json.dumps({
                     'success':True
                     }),content_type='application/json')
+    elif request.method == 'GET':
+        if voter.publicCredential:
+            if datetime.datetime.now() <= election.startDate:
+                return render(request,"closedBallotBox.html",{'election':election})
+            if datetime.datetime.now() >= election.endDate:
+                printf("Right path")
+                return render(request,"closedBallotBox.html",{'election':election})
+            if election.openCastTime!=None and election.closeCastTime!=None:
+                return render(request,"closedBallotBox.html",{'election':election})
+            return render(request,"ballotBox.html")
+        else:
+            if datetime.datetime.now() >= election.endDate:
+                return render(request,"closedBallotBox.html",{'election':election})
+            return render(request,"register.html",{'election':election,'email':voter.email})
     else:
-        return HttpResponseNotAllowed(['POST'])
+        return HttpResponseNotAllowed(['GET','POST'])
 
 @login_required
 def election(request,election_id):

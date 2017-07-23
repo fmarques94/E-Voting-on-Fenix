@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>Ballot Box</title>        
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/register.css' %}" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="{% static 'js/register.js' %}"></script>
+
+{% endblock %}
+
+{% block content %}
+<h2>{{election.name}}</h2>
+
+<p>In order to vote electronically you must first register yourself and receive your credentials.</p>
+
+<a class="registerButton" href="javascript:register('{{ csrf_token }}','{% url 'cast' election_id=election.id %}','{% url 'register' election_id=election.id %}','{{email}}')">Register</a>
+
+{% endblock%}

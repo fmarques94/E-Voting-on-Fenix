@@ -118,5 +118,5 @@ EMAIL_HOST = "mail.tecnico.ulisboa.pt"
 EMAIL_PORT = 465
 #EMAIL_USE_TLS = True
 EMAIL_USE_SSL = True
-EMAIL_HOST_USER = 'email'
+EMAIL_HOST_USER = 'username'
 EMAIL_HOST_PASSWORD = 'password'    #Change this

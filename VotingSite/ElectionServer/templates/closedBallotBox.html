@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>Ballot Box</title>        
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/ballotBox.css' %}" />
+{% endblock %}
+
+{% block content %}
+<h2>{{election.name}}</h2>
+
+<p>The ballot box for this election is open between the date of {{election.startDate|date:"Y-m-d, H:i"}} and {{election.endDate|date:"Y-m-d, H:i"}}</p>
+
+{% if election.openCastTime %}
+<p>During those dates it will be open between {{election.openCastTime|time:"H:i"}} and {{election.openCastTime|time:"H:i"}}</p>
+{% endif %}
+
+{% endblock %}
