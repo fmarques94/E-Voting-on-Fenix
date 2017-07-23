@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>Ballot Box</title>        
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/ballotBox.css' %}" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="{% static 'js/jsbn.js' %}"></script>
+<script src="{% static 'js/jsbn2.js' %}"></script>
+<script src="{% static 'js/sjcl-1.0.6/sjcl.js' %}"></script>
+<script src="{% static 'js/ElGamal.js' %}"></script>
+<script src="{% static 'js/Schnorr.js' %}"></script>
+<script src="{% static 'js/Booth.js' %}"></script>
+<script src="{% static 'js/ballotBox.js' %}"></script>
+<script>
+    var cryptoParameters = {{election.cryptoParameters|safe}};
+    var questionList = JSON.parse("{{questions|escapejs}}");
+    var pk = "{{election.publicKey|escapejs}}";
+</script>
+
+{% endblock %}
+
+{% block content %}
+<h2>{{election.name}}</h2>
+
+<form id="ballotBoxForm" action="javascript:getCredentials()">
+    <fieldset>
+        <legend><h2>Credentials</h2></legend>
+        <b>Secret Credential:</b><br>
+        <textarea name="secret" rows="3" style="width:50%" autocomplete="off" required></textarea><br>
+        <b>Public Credential:</b><br>
+        <textarea name="public" rows="3" style="width:50%" autocomplete="off" required></textarea><br>
+        <input type="submit" class="submitButton" value="Next">
+    </fieldset>
+</form>
+
+{% endblock %}

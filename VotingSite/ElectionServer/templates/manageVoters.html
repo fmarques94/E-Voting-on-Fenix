@@ -41,7 +41,7 @@
         </tr>
         {% for voter in election.voter_set.all %}
         <tr>
-            <td>[<a href="javascript:removeVoter('{{ csrf_token }}','{% url 'manageVoters' election_id=election.id %}','{% url 'removeVoters' election_id=election.id %}','{{voter.identifier}}')">X</a>]</td>
+            <td>[<a href="javascript:removeVoter('{{ csrf_token }}','{% url 'manageVoters' election_id=election.id %}','{% url 'removeVoters' election_id=election.id %}','{{voter.identifier|escapejs}}')">X</a>]</td>
             <td>{{voter.identifier}}</td>
             <td>{{voter.email}}</td>
         </tr>

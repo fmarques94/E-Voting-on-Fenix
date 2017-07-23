@@ -335,15 +335,7 @@ def getQuestions(request,election_id):
             election = Election.objects.get(id=election_id)
         except Election.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
-        data = {"questionList":[]}
-        for question in Question.objects.all().filter(election=election):
-            questionData = {}
-            questionData["id"] = str(question.id)
-            questionData["question"] = question.question
-            questionData["answers"] = []
-            for answer in Answer.objects.all().filter(question=question).order_by('id'):
-                questionData["answers"].append(answer.answer)
-            data["questionList"].append(questionData)
+        data = getQuestionsAux(election)
         #data = serializers.serialize('json',list(Question.objects.all().filter(election=election)))
         return HttpResponse(json.dumps(data),content_type='application/json')
     else:
@@ -441,7 +433,7 @@ def cast(request,election_id):
                 return render(request,"closedBallotBox.html",{'election':election})
             if election.openCastTime!=None and election.closeCastTime!=None:
                 return render(request,"closedBallotBox.html",{'election':election})
-            return render(request,"ballotBox.html")
+            return render(request,"ballotBox.html",{'election':election,'questions':json.dumps(getQuestionsAux(election))})
         else:
             if datetime.datetime.now() >= election.endDate:
                 return render(request,"closedBallotBox.html",{'election':election})
@@ -602,3 +594,15 @@ def bulletinBoard(request,election_id):
         return render(request,'bulletinBoard.html',{'election':election,'keyShares':keyshares})
     else:
         return HttpResponseNotAllowed(['GET'])
+
+def getQuestionsAux(election):
+    data = {"questionList":[]}
+    for question in Question.objects.all().filter(election=election):
+        questionData = {}
+        questionData["id"] = str(question.id)
+        questionData["question"] = question.question
+        questionData["answers"] = []
+        for answer in Answer.objects.all().filter(question=question).order_by('id'):
+            questionData["answers"].append(answer.answer)
+        data["questionList"].append(questionData)
+    return data

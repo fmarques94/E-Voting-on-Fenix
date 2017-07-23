@@ -10,20 +10,20 @@ function ElGamal(p,g,h){
     }
 
     this.encrypt = function(encrypt){
-        k = this.generateNumberBelowP(this.p);
-        c1 = this.g.modPow(k,p)
-        value = new BigInteger(encrypt.toString(),10)
-        c2 = ((this.h.modPow(k,this.p)).multiply(this.g.modPow(value,this.p))).mod(this.p)
+        var k = this.generateNumberBelowP(this.p);
+        var c1 = this.g.modPow(k,p)
+        var value = new BigInteger(encrypt.toString(),10)
+        var c2 = ((this.h.modPow(k,this.p)).multiply(this.g.modPow(value,this.p))).mod(this.p)
         return [c1,c2,k]
     }
 
     this.generateNumberBelowP = function(p){
-        k = null
+        var k = null
         while(k==undefined){
             var array = new Uint32Array(32);
             window.crypto.getRandomValues(array);
-            result = ""
-            for(i=0;i<32;i++){
+            var result = ""
+            for(var i=0;i<32;i++){
                 result = result + array[i].toString();
             }
             k = new BigInteger(result,10);

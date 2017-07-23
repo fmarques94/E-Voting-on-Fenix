@@ -49,7 +49,7 @@
         </tr>
         {% for trustee in election.trustee_set.all %}
         <tr>
-            <td>[<a href="javascript:removeTrustee('{{ csrf_token }}','{% url 'manageTrustees' election_id=election.id %}','{% url 'removeTrustees' election_id=election.id %}','{{trustee.identifier}}')">X</a>]</td>
+            <td>[<a href="javascript:removeTrustee('{{ csrf_token }}','{% url 'manageTrustees' election_id=election.id %}','{% url 'removeTrustees' election_id=election.id %}','{{trustee.identifier|escapejs}}')">X</a>]</td>
             <td>{{trustee.identifier}}</td>
             <td>{{trustee.name}}</td>
             <td>{{trustee.email}}</td>

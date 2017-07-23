@@ -1,68 +1,70 @@
-function Booth(electionPublicKey,cryptoParameters,secretCredential,questionList,boothForm){
+function Booth(electionPublicKey,cryptoParameters,credentials,questionList,boothForm){
     this.electionPublicKey = new BigInteger(electionPublicKey,16);
     this.p = new BigInteger(cryptoParameters['p'],10);
     this.g = new BigInteger(cryptoParameters['g'],10);
     this.q = new BigInteger(cryptoParameters['q'],10);
-    this.secretCredential = new BigInteger(credentials["secret"],16);
-    this.publicCredential = new BigInteger(credentials["public"],16);
-    this.questionList = questionList;
+    this.secretCredential = new BigInteger(credentials["secret"],10);
+    this.publicCredential = new BigInteger(credentials["public"],10);
+    this.questionList = questionList["questionList"];
     this.currentQuestion = 0;
     this.boothForm = boothForm;
     this.elGamal = new ElGamal(this.p,this.g,this.electionPublicKey);
     this.schnorr = new Schnorr(this.p,this.q,this.g,this.secretCredential);
     this.ballot = {"answerList":[]}
 
-    
+    //<input type="radio" name="castTimeRadioButton" onclick="enableCastTimes()" value="true" checked>Yes
 
     this.nextQuestion = function(){
         if(this.currentQuestion>0){
-            saveAnswer();
+            this.saveAnswer();
         }
         if(this.currentQuestion<this.questionList.length){
-            this.boothForm.html("");
+            var question = this.questionList[this.currentQuestion];
+            htmlCode = "<fieldset><legend><h3>"+question["question"]+"</h3></legend>";
+            for(i=0;i<question["answers"].length;i++){
+                htmlCode = htmlCode + "<input type=\"radio\" name=\"answer\" value=\""+i+"\">"+question["answers"][i]+"<br>";
+            }
+            htmlCode = htmlCode+"<input type=\"submit\" class=\"submitButton\" value=\"Next\"></fieldset>";
+            this.boothForm.html(htmlCode);
+            this.currentQuestion++;
         }else{
-            encAndSign();
+            this.encAndSign();
         }
     }
 
-    var saveAnswer = function(){
-        vote = {"questionId":this.questionList[this.currentQuestion]["id"],"answers:":[]};
+    this.saveAnswer = function(){
+        console.log(this.currentQuestion)
+        vote = {"questionId":this.questionList[this.currentQuestion-1]["id"],"answers":[]};
         answerIndex = $('input:radio[name=answer]:checked').val();
-        vote['answerIndex'] = answerIndex;
-        //only do the encryption at the end of the ballot. just save the dirty answer as is so that we can put a loading symbol.
-        /*for(i=0;i<this.questionList[this.currentQuestion]["answers"].length;i++){
-            encAnswers = {};
-            if(i==answerIndex){
-                result = this.elGamal.encrypt(1);
-            }else{
-                result = this.elGamal.encrypt(0);
-            }
-            encAnswers['alpha'] = result[0].toString(10);
-            encAnswers['beta'] = result[1].toString(10);
-            encAnswers['randomness'] = result[2].toString(10);
-            vote['answers'].append(encAnswers);
-        }*/
-        this.ballot["answerList"].append(vote);
+        vote['answerIndex'] = parseInt(answerIndex);
+        this.ballot["answerList"].push(vote);
     }
 
-    var encAndSign = function(){
+    this.encAndSign = function(){
         hash = new BigInteger(1,10);
-        for(i=0;i<this.ballot['answerList'].length;i++){
-            questionData = this.ballot['answerList'][i];
-            answerIndex = questionData['answerIndex'];
-            for(j=0;j<this.questionList[i]["answers"].length;i++){
+        for(var i=0;i<this.ballot['answerList'].length;i++){
+            var questionData = this.ballot['answerList'][i];
+            var answerIndex = questionData['answerIndex'];
+            console.log(i)
+            console.log(this.questionList[i])
+            for(var j=0;j<this.questionList[i]["answers"].length;j++){
+                console.log(this.questionList[i])
                 encAnswers = {};
-                if(i==answerIndex){
+                if(j==answerIndex){
                     result = this.elGamal.encrypt(1);
                 }else{
                     result = this.elGamal.encrypt(0);
                 }
+                
                 encAnswers['alpha'] = result[0].toString(10);
                 encAnswers['beta'] = result[1].toString(10);
                 encAnswers['randomness'] = result[2].toString(10);
-                questionData['answers'].append(encAnswers);
+                console.log(questionData)
+                console.log(questionData["answers"])
+                questionData['answers'].push(encAnswers);
                 hash = hash.multiply(result[0])
                 hash = hash.multiply(result[1])
+                
             }
         }
         hash = hash.mod(this.p);
