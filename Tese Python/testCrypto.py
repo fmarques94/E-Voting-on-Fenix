@@ -92,6 +92,14 @@ def testSharedSecret():
     print(table[elgamal3.decrypt(ciphertext)])
 
 
+def testProof(challenge,response,g,h,p,alpha,beta,message):
+    A = (pow(g,response,p)*pow(pow(alpha,p-2,p),challenge,p))%p
+    print("Divisao")
+    print(beta/(pow(g,message,p)))
+    B = (pow(h,response,p) * pow(pow(beta,p-2,p),challenge,p) * pow(g,(message*challenge),p))%p
+    #B = (pow(h,response,p)*pow(pow((beta//(pow(g,message))),p-2,p),challenge,p))%p   
+    return A,B
+	
 print("Starting tests")
 #number of tests
 nTests = 1
@@ -99,8 +107,73 @@ nTests = 1
 for i in range(nTests):
     print("Generating parameters")
 
-    #parameters = {'p':2579,
-	#'g':2}
+    parameters = {'p':2579,
+	'g':2}
+    elgamal = ElGamal.ElGamal()
+    
+	
+    p = 2579
+    g = 2
+    elgamal.keys={"pub":
+        {
+            "p":2579,
+            "g":2,
+            "y":949},
+        "priv":{
+            "d":765
+            }
+        }
+	
+    result = elgamal.encrypt(1)
+    alpha = result[0]
+    beta = result[1]
+    r = result[2]
+    h = 949
+	
+    w = secrets.randbelow(p)
+    e = secrets.randbelow(p)
+	
+    challenge0 = secrets.randbelow(p)
+    response0 = secrets.randbelow(p)
+    A0 = (pow(g,response0,p)*pow(pow(alpha,p-2,p),challenge0,p))%p
+    B0 = (pow(h,response0,p) * pow(pow(beta,p-2,p),challenge0,p) * pow(g,(0*challenge0),p))%p #(pow(h,response0,p)*pow(pow(beta//(pow(g,0)),p-2,p),challenge0,p))%p
+	
+	
+    challenge1 = (e - challenge0)%p
+    response1 = w + r*challenge1
+    A1 = pow(g,w,p)
+    B1 = pow(h,w,p)
+	
+	
+    print("Test all challenges")
+    print((challenge0+challenge1)%p==e)
+    print("Testing for 0")
+    
+    results0 = testProof(challenge0,response0,g,h,p,alpha,beta,0)
+    print(A0==results0[0])
+    print(B0==results0[1])
+    print("Testing for 1")
+    print("Challenge0")
+    print(challenge0)
+    print("Challenge")
+    print(challenge1)
+    print("Response")
+    print(response1)
+    print("w")
+    print(w)
+    print("e")
+    print(e)
+    results1 = testProof(challenge1,response1,g,h,p,alpha,beta,1)
+    print(A1==results1[0])
+    print(B1==results1[1])
+    print("A1")
+    print(A1)
+    print(results1[0])
+    print("B1")
+    print(B1)
+    print(results1[1])
+	
+    '''
     schnorr = Schnorr.Schnorr()
     schnorr.keys={
             "pub":{
@@ -125,7 +198,7 @@ for i in range(nTests):
     print("Going to verify if value is 10")
     print(schnorr.verify(signature,10))
     print("")
-    '''
+    
     parameters = ParameterGenerator.generate_parameters()
         
     assert parameters

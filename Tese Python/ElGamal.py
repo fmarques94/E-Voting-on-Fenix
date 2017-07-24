@@ -65,7 +65,7 @@ class ElGamal:
 
         c2 = (pow(y,k,p)*pow(g,m,p))%p
 
-        return c1,c2
+        return c1,c2,k
 
     def decrypt(self,x):
         pub = self.__get_public_key()
