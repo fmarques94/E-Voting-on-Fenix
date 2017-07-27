@@ -124,10 +124,11 @@ for i in range(nTests):
             }
         }
 	
-    result = elgamal.encrypt(1)
-    alpha = result[0]
-    beta = result[1]
-    r = result[2]
+    result1 = elgamal.encrypt(1)
+    result2 = elgamal.encrypt(0)
+    alpha = result1[0] * result2[0]
+    beta = result1[1] * result2[1]
+    r = result1[2] + result2[2]
     h = 949
 	
     w = secrets.randbelow(p)

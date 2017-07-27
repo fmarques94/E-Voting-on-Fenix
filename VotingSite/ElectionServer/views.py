@@ -433,7 +433,24 @@ def cast(request,election_id):
                 return render(request,"closedBallotBox.html",{'election':election})
             if election.openCastTime!=None and election.closeCastTime!=None:
                 return render(request,"closedBallotBox.html",{'election':election})
-            return render(request,"ballotBox.html",{'election':election,'questions':json.dumps(getQuestionsAux(election))})
+            try:
+                ballot = Ballot.objects.get(election=election,publicCredential=voter.publicCredential)
+                return render(request,"closedBallotBox.html",{'election':election})
+            except Ballot.DoesNotExist:
+                cryptoParameters = json.loads(election.cryptoParameters.replace('\'','"'))
+                questions = getQuestionsAux(election)
+                randoms = {"randomLists":[]}
+                for question in questions["questionList"]:
+                    overall_random_aux = str(secrets.randbelow(int(cryptoParameters['p'])))
+                    question["overall_random"] = overall_random_aux
+                    question["individual_random"] = []
+                    for answer in question["answers"]:
+                        individual_random_aux = str(secrets.randbelow(int(cryptoParameters['p'])))
+                        question["individual_random"].append(individual_random_aux)
+                    randoms["randomLists"].append({"overall_random":overall_random_aux,"individual_random":question["individual_random"]})
+                voter.proofRandomValues = json.dumps(randoms)
+                voter.save()
+                return render(request,"ballotBox.html",{'election':election,'questions':json.dumps(questions)})
         else:
             if datetime.datetime.now() >= election.endDate:
                 return render(request,"closedBallotBox.html",{'election':election})

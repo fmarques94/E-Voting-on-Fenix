@@ -45,10 +45,14 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
         for(var i=0;i<this.ballot['answerList'].length;i++){
             var questionData = this.ballot['answerList'][i];
             var answerIndex = questionData['answerIndex'];
+            var currentQuestion = this.questionList[i]
             console.log(i)
-            console.log(this.questionList[i])
-            for(var j=0;j<this.questionList[i]["answers"].length;j++){
-                console.log(this.questionList[i])
+            console.log(currentQuestion)
+            var alpha = new BigInteger('1',10);
+            var beta = new BigInteger('1',10);
+            var random = new BigInteger('0',10);
+            for(var j=0;j<currentQuestion["answers"].length;j++){
+                console.log(currentQuestion)
                 encAnswers = {};
                 if(j==answerIndex){
                     result = this.elGamal.encrypt(1);
@@ -61,14 +65,17 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
                 encAnswers['alpha'] = result[0].toString(10);
                 encAnswers['beta'] = result[1].toString(10);
                 encAnswers['randomness'] = result[2].toString(10);
-                encAnswers['individualProof'] = this.generateProof(message,result);
+                encAnswers['individualProof'] = this.generateProof(message,result,new BigInteger(currentQuestion['individual_random'][j],10));
                 console.log(questionData)
                 console.log(questionData["answers"])
                 questionData['answers'].push(encAnswers);
                 hash = hash.multiply(result[0])
                 hash = hash.multiply(result[1])
-                
+                alpha = alpha.multiply(result[0]);
+                beta = beta.multiply(result[1]);
+                random = random.add(result[2]);
             }
+            questionData['overall_proof'] = this.generateProof(1,[alpha,beta,random],new BigInteger(currentQuestion['overall_random'],10))
         }
         hash = hash.mod(this.p);
         signature = this.schnorr.sign(hash);
@@ -126,5 +133,7 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
             "B":B1,
             "response":response1
         });
+
+        return proof;
     }
 }

@@ -34,6 +34,7 @@ class Voter(models.Model):
     identifier = models.TextField()
     email = models.EmailField(max_length=200)
     publicCredential = models.TextField()
+    proofRandomValues = models.TextField(null=True)
     class Meta:
         unique_together = (('election','identifier'),)
 
@@ -47,7 +48,7 @@ class Answer(models.Model):
     answer = models.TextField()
 
 class Ballot(models.Model):
-    election = models.ForeignKey(Question,on_delete = models.CASCADE)
+    election = models.ForeignKey(Election,on_delete = models.CASCADE)
     ballot = models.TextField()
     publicCredential = models.TextField()
     class Meta:
