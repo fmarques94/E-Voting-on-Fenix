@@ -1,16 +1,12 @@
 function Booth(electionPublicKey,cryptoParameters,credentials,questionList,boothForm){
-    this.electionPublicKey = new BigInteger(electionPublicKey,16);
-    this.p = new BigInteger(cryptoParameters['p'],10);
-    this.g = new BigInteger(cryptoParameters['g'],10);
-    this.q = new BigInteger(cryptoParameters['q'],10);
-    this.secretCredential = new BigInteger(credentials["secret"],10);
-    this.publicCredential = new BigInteger(credentials["public"],10);
+    this.pk = electionPublicKey;
+    this.cryptoParameters = cryptoParameters;
+    this.credentials = credentials;
     this.questionList = questionList["questionList"];
     this.currentQuestion = 0;
     this.boothForm = boothForm;
-    this.elGamal = new ElGamal(this.p,this.g,this.electionPublicKey);
-    this.schnorr = new Schnorr(this.p,this.q,this.g,this.secretCredential);
     this.ballot = {"answerList":[]}
+    this.ballotToSend = {"answerList":[]}
 
     //<input type="radio" name="castTimeRadioButton" onclick="enableCastTimes()" value="true" checked>Yes
 
@@ -22,37 +18,86 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
             var question = this.questionList[this.currentQuestion];
             htmlCode = "<fieldset><legend><h3>"+question["question"]+"</h3></legend>";
             for(i=0;i<question["answers"].length;i++){
-                htmlCode = htmlCode + "<input type=\"radio\" name=\"answer\" value=\""+i+"\">"+question["answers"][i]+"<br>";
+                htmlCode = htmlCode + "<input type=\"radio\" name=\"answer\" value=\""+i+"\" required>"+question["answers"][i]+"<br>";
             }
             htmlCode = htmlCode+"<input type=\"submit\" class=\"submitButton\" value=\"Next\"></fieldset>";
             this.boothForm.html(htmlCode);
             this.currentQuestion++;
         }else{
-            this.encAndSign();
+            this.boothForm.html("<div class=\"bar\"></div><p>Sealing the ballot. This might take some time.</p>");
+            var scriptFiles = []
+            var scripts = document.getElementsByClassName("import")
+            for(var i = 0; i<scripts.length;i++){
+                scriptFiles.push(scripts[i].src);
+            }
+            var param = {
+                fn:this.encAndSign,
+                args:[],
+                context: this,
+                importFiles: scriptFiles
+            }
+            vkthread.exec(param).then(function(data){
+                BOOTH.ballot = data[0];
+                BOOTH.ballotToSend = data[1];
+                BOOTH.boothForm.attr("action","javascript:BOOTH.castBallot();");
+                BOOTH.boothForm.html("<p>Your smart ballot tracker is</p>"+
+                "<p><b>"+data[2]+"</b></p>"+
+                "<p>Save this value in order to verify your ballot on the bulletin board.</p>"+
+                "<input type=\"submit\" class=\"submitButton\" value=\"Cast Ballot\">");
+            });
         }
     }
 
+    this.castBallot = function(){
+        this.boothForm.html("<div class=\"bar\"></div><p>Casting the ballot. This might take some time.</p>");
+        $.ajaxSetup({headers: { "X-CSRFToken": token }});
+        console.log('Seding request now!');
+        $.ajax({
+        type: "POST",
+        url: window.location.href,
+        data: JSON.stringify(BOOTH.ballotToSend),
+        success: function(msg){
+            BOOTH.boothForm.html("<fieldset><p>Ballot successfully cast.</p></fieldset>")},
+        error: function(xhr, ajaxOptions, thrownError){
+            if(xhr){
+                $('.submitButton').css("display", "block");
+                $('.loader').css("display", "none");
+                alert('Oops: ' + xhr.responseJSON['error']);
+            }else{
+                alert('Oops: An unexpected error occurred. Please contact the administrators');
+            }
+        },
+        dataType: "json",
+        contentType : "application/json",
+        });
+    }
+
     this.saveAnswer = function(){
-        console.log(this.currentQuestion)
         vote = {"questionId":this.questionList[this.currentQuestion-1]["id"],"answers":[]};
         answerIndex = $('input:radio[name=answer]:checked').val();
         vote['answerIndex'] = parseInt(answerIndex);
         this.ballot["answerList"].push(vote);
+        this.ballotToSend["answerList"].push({"questionId":this.questionList[this.currentQuestion-1]["id"],"answers":[]});
     }
 
     this.encAndSign = function(){
+        this.electionPublicKey = new BigInteger(this.pk,16);
+        this.p = new BigInteger(this.cryptoParameters['p'],10);
+        this.g = new BigInteger(this.cryptoParameters['g'],10);
+        this.q = new BigInteger(this.cryptoParameters['q'],10);
+        this.secretCredential = new BigInteger(this.credentials["secret"],10);
+        this.publicCredential = new BigInteger(this.credentials["public"],10);
+        this.elGamal = new ElGamal(this.p,this.g,this.electionPublicKey);
+        this.schnorr = new Schnorr(this.p,this.q,this.g,this.secretCredential);
         hash = new BigInteger(1,10);
         for(var i=0;i<this.ballot['answerList'].length;i++){
             var questionData = this.ballot['answerList'][i];
             var answerIndex = questionData['answerIndex'];
             var currentQuestion = this.questionList[i]
-            console.log(i)
-            console.log(currentQuestion)
             var alpha = new BigInteger('1',10);
             var beta = new BigInteger('1',10);
             var random = new BigInteger('0',10);
             for(var j=0;j<currentQuestion["answers"].length;j++){
-                console.log(currentQuestion)
                 encAnswers = {};
                 if(j==answerIndex){
                     result = this.elGamal.encrypt(1);
@@ -61,26 +106,29 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
                     result = this.elGamal.encrypt(0);
                     var message = 0;
                 }
-                
+                console.log("Here")
                 encAnswers['alpha'] = result[0].toString(10);
                 encAnswers['beta'] = result[1].toString(10);
                 encAnswers['randomness'] = result[2].toString(10);
                 encAnswers['individualProof'] = this.generateProof(message,result,new BigInteger(currentQuestion['individual_random'][j],10));
-                console.log(questionData)
-                console.log(questionData["answers"])
                 questionData['answers'].push(encAnswers);
+                var encAnswersClone = Object.assign({}, encAnswers);
+                delete encAnswersClone['randomness'];
+                this.ballotToSend['answerList'][i]['answers'].push(encAnswersClone);
                 hash = hash.multiply(result[0])
                 hash = hash.multiply(result[1])
                 alpha = alpha.multiply(result[0]);
                 beta = beta.multiply(result[1]);
                 random = random.add(result[2]);
             }
-            questionData['overall_proof'] = this.generateProof(1,[alpha,beta,random],new BigInteger(currentQuestion['overall_random'],10))
+            var proof = this.generateProof(1,[alpha,beta,random],new BigInteger(currentQuestion['overall_random'],10))
+            questionData['overall_proof'] = proof;
+            this.ballotToSend['answerList'][i]['overall_proof'] = proof;
         }
         hash = hash.mod(this.p);
-        signature = this.schnorr.sign(hash);
-
-        //This goes for when the cast is done.
+        this.ballot["signature"] = this.schnorr.sign(hash).toString(10);
+        this.ballotToSend["signature"] = this.schnorr.sign(hash).toString(10);
+        var payload = {'ballot':this.ballotToSend,'publicCredential':this.credentials["public"]}
 
         /*for(i=0;i<this.ballot["answerList"].length;i++){
             questionAnswer = this.ballot["answerList"][i]
@@ -89,9 +137,8 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
                 delete answer["randomness"];
             }
         }*/
-
-
-        console.log(this.ballot);
+        
+        return [this.ballot,payload,sjcl.codec.hex.fromBits(sjcl.hash.sha256.hash(JSON.stringify(payload)))];        
     }
 
     this.generateProof = function(message,result,e){
@@ -122,16 +169,16 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
         }
 
         proof.push({
-            "challenge":challenge0,
-            "A":A0,
-            "B":B0,
-            "response":response0
+            "challenge":challenge0.toString(10),
+            "A":A0.toString(10),
+            "B":B0.toString(10),
+            "response":response0.toString(10)
         });
         proof.push({
-            "challenge":challenge1,
-            "A":A1,
-            "B":B1,
-            "response":response1
+            "challenge":challenge1.toString(10),
+            "A":A1.toString(10),
+            "B":B1.toString(10),
+            "response":response1.toString(10)
         });
 
         return proof;

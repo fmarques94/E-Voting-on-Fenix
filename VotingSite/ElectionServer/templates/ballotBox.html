@@ -5,17 +5,19 @@
 {% load static %}
 <link rel="stylesheet" type="text/css" href="{% static 'style/ballotBox.css' %}" />
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-<script src="{% static 'js/jsbn.js' %}"></script>
-<script src="{% static 'js/jsbn2.js' %}"></script>
-<script src="{% static 'js/sjcl-1.0.6/sjcl.js' %}"></script>
-<script src="{% static 'js/ElGamal.js' %}"></script>
-<script src="{% static 'js/Schnorr.js' %}"></script>
+<script class="import" src="{% static 'js/jsbn.js' %}"></script>
+<script class="import" src="{% static 'js/jsbn2.js' %}"></script>
+<script class="import" src="{% static 'js/sjcl-1.0.6/sjcl.js' %}"></script>
+<script src="{% static 'js/vkthread/vkthread.min.js' %}"></script>
+<script class="import" src="{% static 'js/ElGamal.js' %}"></script>
+<script class="import" src="{% static 'js/Schnorr.js' %}"></script>
 <script src="{% static 'js/Booth.js' %}"></script>
 <script src="{% static 'js/ballotBox.js' %}"></script>
 <script>
     var cryptoParameters = {{election.cryptoParameters|safe}};
     var questionList = JSON.parse("{{questions|escapejs}}");
     var pk = "{{election.publicKey|escapejs}}";
+    var token = '{{ csrf_token }}';
 </script>
 
 {% endblock %}

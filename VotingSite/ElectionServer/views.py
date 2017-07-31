@@ -6,6 +6,8 @@ import requests
 import datetime
 import secrets
 import ast
+import hashlib
+import base64
 
 #Django
 from django.shortcuts import render
@@ -416,8 +418,10 @@ def cast(request,election_id):
             #TODO verify ZK-proofs
             try:
                 ballot = Ballot()
+                ballot.election = election
                 ballot.publicCredential = voter.publicCredential
                 ballot.ballot = data['ballot']
+                ballot.SBT = hashlib.sha256(request.body).hexdigest()
                 ballot.save()
             except Exception as exception:
                 return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)

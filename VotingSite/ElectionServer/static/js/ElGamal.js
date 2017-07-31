@@ -11,7 +11,7 @@ function ElGamal(p,g,h){
 
     this.encrypt = function(encrypt){
         var k = this.generateNumberBelowP(this.p);
-        var c1 = this.g.modPow(k,p)
+        var c1 = this.g.modPow(k,this.p)
         var value = new BigInteger(encrypt.toString(),10)
         var c2 = ((this.h.modPow(k,this.p)).multiply(this.g.modPow(value,this.p))).mod(this.p)
         return [c1,c2,k]
@@ -21,7 +21,9 @@ function ElGamal(p,g,h){
         var k = null
         while(k==undefined){
             var array = new Uint32Array(32);
-            window.crypto.getRandomValues(array);
+            //var array = Uint32Array.from(sjcl.random.randomWords(32));
+            //console.log(array);
+            self.crypto.getRandomValues(array);
             var result = ""
             for(var i=0;i<32;i++){
                 result = result + array[i].toString();

@@ -157,6 +157,7 @@ USE_TZ = False
 
 STATIC_URL = '/static/'
 
+
 #Variables
 CREDENTIAL_AUTHORITY = 'http://127.0.0.1:8001'
 AUTHORIZED_ADMINS = ['ist176419',]

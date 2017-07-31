@@ -16,8 +16,9 @@ function Schnorr(p,q,g,a){
     var generateNumber = function(){
         k = null
         while(k==undefined){
+            //var array = Uint32Array.from(sjcl.random.randomWords(32));
             var array = new Uint32Array(4);
-            window.crypto.getRandomValues(array);
+            self.crypto.getRandomValues(array);
             result = ""
             for(i=0;i<4;i++){
                 result = result + array[i].toString();
