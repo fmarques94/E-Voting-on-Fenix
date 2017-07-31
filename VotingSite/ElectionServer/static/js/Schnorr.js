@@ -24,7 +24,7 @@ function Schnorr(p,q,g,a){
                 result = result + array[i].toString();
             }
             k = new BigInteger(result,10);
-            if(k.toString(10)>q.toString(10)){
+            if((k.max(this.q)).equals(k)){
                 k = null;
             }
         }

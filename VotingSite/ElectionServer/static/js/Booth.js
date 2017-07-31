@@ -66,6 +66,7 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
             }else{
                 alert('Oops: An unexpected error occurred. Please contact the administrators');
             }
+            BOOTH.boothForm.html("<input type=\"submit\" class=\"submitButton\" value=\"Cast Ballot\">")
         },
         dataType: "json",
         contentType : "application/json",
@@ -142,31 +143,48 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
     }
 
     this.generateProof = function(message,result,e){
+        console.log(e.toString(10));
+        //console.log(this.p.toString(10))
         var proof = []
         var alpha = result[0]
         var beta = result[1]
         var r = result[2]
         if(message == 0){
-            var challenge1 = this.elGamal.generateNumberBelowP(this.p);
-            var response1 = this.elGamal.generateNumberBelowP(this.p);  
+            var challenge1 = this.elGamal.generateNumberBelowP();
+            console.log("First challenge");
+            console.log("challenge = " + challenge1.toString(10))
+            console.log("p="+this.p.toString(10))
+            console.log(challenge1.toString(10)>this.p.toString(10))
+            var response1 = this.elGamal.generateNumberBelowP();  
             var A1 = (this.g.modPow(response1,this.p).multiply((alpha.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge1,this.p))).mod(this.p)
             var B1 = ((this.electionPublicKey.modPow(response1,this.p).multiply((beta.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge1,this.p))).multiply(this.g.modPow(challenge1.multiply(new BigInteger('1',10)),this.p))).mod(this.p)
-            var w = this.elGamal.generateNumberBelowP(this.p);
+            var w = this.elGamal.generateNumberBelowP();
             var A0 = this.g.modPow(w,this.p);
             var B0 = this.electionPublicKey.modPow(w,this.p);
             var challenge0 = (e.subtract(challenge1)).mod(this.p);
+            console.log("Subtract")
+            console.log(e.subtract(challenge1).toString(10))
+            console.log("Second challenge");
+            console.log(challenge0.toString(10))
             var response0 = w.add(r.multiply(challenge0));
         }else{
-            var challenge0 = this.elGamal.generateNumberBelowP(this.p);
-            var response0 = this.elGamal.generateNumberBelowP(this.p);  
+            var challenge0 = this.elGamal.generateNumberBelowP();
+            console.log("First challenge");
+            console.log(challenge0.toString(10))
+            var response0 = this.elGamal.generateNumberBelowP();  
             var A0 = (this.g.modPow(response0,this.p).multiply((alpha.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge0,this.p))).mod(this.p)
             var B0 = ((this.electionPublicKey.modPow(response0,this.p).multiply((beta.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge0,this.p))).multiply(this.g.modPow(challenge0.multiply(new BigInteger('0',10)),this.p))).mod(this.p)
-            var w = this.elGamal.generateNumberBelowP(this.p);
+            var w = this.elGamal.generateNumberBelowP();
             var A1 = this.g.modPow(w,this.p);
             var B1 = this.electionPublicKey.modPow(w,this.p);
             var challenge1 = (e.subtract(challenge0)).mod(this.p);
+            console.log("Subtract")
+            console.log(e.subtract(challenge1).toString(10))
+            console.log("Second challenge");
+            console.log(challenge1.toString(10))
             var response1 = w.add(r.multiply(challenge1));
         }
+        //console.log((challenge1.add(challenge0)).toString(10))
 
         proof.push({
             "challenge":challenge0.toString(10),

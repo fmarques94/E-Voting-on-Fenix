@@ -417,6 +417,32 @@ def cast(request,election_id):
         except Ballot.DoesNotExist:
             #TODO verify ZK-proofs
             try:
+                randoms = json.loads(voter.proofRandomValues)
+                cryptoParameters = json.loads(election.cryptoParameters.replace('\'','"'))
+                p = int(cryptoParameters['p'])
+                g = int(cryptoParameters['g'])
+                h = int(election.publicKey,16)
+                for i in range(0,len(data['ballot']['answerList'])):
+                    question = data['ballot']['answerList'][i]
+                    for j in range(0,len(question['answers'])):
+                        answerData = question['answers'][j]
+                        alpha = int(answerData['alpha'])
+                        beta = int(answerData['beta'])
+                        print(randoms['randomLists'])
+                        print("Hello")
+                        print(randoms['randomLists'][i]['individual_random'])
+                        random = int(randoms['randomLists'][i]['individual_random'][j])
+                        print(random)
+                        if random == (int(answerData['individualProof'][0]['challenge']) + int(answerData['individualProof'][1]['challenge'])):
+                            proof0 = testProof(int(answerData['individualProof'][0]['challenge']),int(answerData['individualProof'][0]['response']),g,h,p,alpha,beta,0)
+                            proof1 = testProof(int(answerData['individualProof'][1]['challenge']),int(answerData['individualProof'][1]['response']),g,h,p,alpha,beta,1)
+                            if int(answerData['individualProof'][0]['A'])==proof0[0] and int(answerData['individualProof'][0]['B'])==proof0[1] and int(answerData['individualProof'][1]['A'])==proof1[0] and int(answerData['individualProof'][1]['B'])==proof1[1]:
+                                continue
+                            else:
+                                return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
+                        else:
+                            print("here")
+                            return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
                 ballot = Ballot()
                 ballot.election = election
                 ballot.publicCredential = voter.publicCredential
@@ -461,6 +487,11 @@ def cast(request,election_id):
             return render(request,"register.html",{'election':election,'email':voter.email})
     else:
         return HttpResponseNotAllowed(['GET','POST'])
+
+def testProof(challenge,response,g,h,p,alpha,beta,message):
+    A = (pow(g,response,p)*pow(pow(alpha,p-2,p),challenge,p))%p
+    B = (pow(h,response,p) * pow(pow(beta,p-2,p),challenge,p) * pow(g,(message*challenge),p))%p
+    return A,B
 
 @login_required
 def election(request,election_id):
