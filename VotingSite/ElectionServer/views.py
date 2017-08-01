@@ -30,6 +30,7 @@ from ElectionServer.models import Ballot
 
 #Crypto
 from ElectionServer.Crypto.ParameterGenerator import generate_parameters
+from ElectionServer.Crypto import Schnorr
 
 def home(request):
     context = {'elections': Election.objects.all()}
@@ -420,29 +421,56 @@ def cast(request,election_id):
                 randoms = json.loads(voter.proofRandomValues)
                 cryptoParameters = json.loads(election.cryptoParameters.replace('\'','"'))
                 p = int(cryptoParameters['p'])
+                q = int(cryptoParameters['q'])
                 g = int(cryptoParameters['g'])
                 h = int(election.publicKey,16)
+                schnorr = Schnorr.Schnorr()
+                schnorr.keys={
+                "pub":{
+                    "p":p,
+                    "q":q,
+                    "alpha":g,
+                    "beta":int(data['publicCredential'])
+                }}
+                signMessage = 1
                 for i in range(0,len(data['ballot']['answerList'])):
                     question = data['ballot']['answerList'][i]
+                    totalAlpha = 1
+                    totalBeta = 1
                     for j in range(0,len(question['answers'])):
                         answerData = question['answers'][j]
                         alpha = int(answerData['alpha'])
                         beta = int(answerData['beta'])
-                        print(randoms['randomLists'])
-                        print("Hello")
-                        print(randoms['randomLists'][i]['individual_random'])
+                        totalAlpha = totalAlpha * alpha
+                        totalBeta = totalBeta * beta
+                        signMessage = signMessage*alpha*beta
                         random = int(randoms['randomLists'][i]['individual_random'][j])
-                        print(random)
-                        if random == (int(answerData['individualProof'][0]['challenge']) + int(answerData['individualProof'][1]['challenge'])):
+                        if random == (int(answerData['individualProof'][0]['challenge']) + int(answerData['individualProof'][1]['challenge']))%p:
                             proof0 = testProof(int(answerData['individualProof'][0]['challenge']),int(answerData['individualProof'][0]['response']),g,h,p,alpha,beta,0)
                             proof1 = testProof(int(answerData['individualProof'][1]['challenge']),int(answerData['individualProof'][1]['response']),g,h,p,alpha,beta,1)
                             if int(answerData['individualProof'][0]['A'])==proof0[0] and int(answerData['individualProof'][0]['B'])==proof0[1] and int(answerData['individualProof'][1]['A'])==proof1[0] and int(answerData['individualProof'][1]['B'])==proof1[1]:
                                 continue
                             else:
+                                print("One")
                                 return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
                         else:
-                            print("here")
+                            print("Two")
                             return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
+                    random = int(randoms['randomLists'][i]['overall_random'])
+                    if random == (int(question['overall_proof'][0]['challenge']) + int(question['overall_proof'][1]['challenge']))%p:
+                        proof0 = testProof(int(question['overall_proof'][0]['challenge']),int(question['overall_proof'][0]['response']),g,h,p,totalAlpha,totalBeta,0)
+                        proof1 = testProof(int(question['overall_proof'][1]['challenge']),int(question['overall_proof'][1]['response']),g,h,p,totalAlpha,totalBeta,1)
+                        if int(question['overall_proof'][0]['A'])==proof0[0] and int(question['overall_proof'][0]['B'])==proof0[1] and int(question['overall_proof'][1]['A'])==proof1[0] and int(question['overall_proof'][1]['B'])==proof1[1]:
+                            continue
+                        else:
+                            print("Three")
+                            return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
+                    else:
+                        print("Four")
+                        return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
+                signMessage = signMessage%p
+                if not schnorr.verify([int(data['ballot']['signature'][0]),int(data['ballot']['signature'][1])],signMessage):
+                    return HttpResponse(json.dumps({'error':"Failed signature verification"}), content_type='application/json', status=500)
                 ballot = Ballot()
                 ballot.election = election
                 ballot.publicCredential = voter.publicCredential

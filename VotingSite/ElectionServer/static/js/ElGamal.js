@@ -30,7 +30,6 @@ function ElGamal(p,g,h){
             }
             k = new BigInteger(result,10);
             if((k.max(this.p)).equals(k)){
-                console.log("GREATER")
                 k = null;
             }
         }

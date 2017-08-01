@@ -64,6 +64,9 @@ def testSharedSecret():
     print("Testing shared secret")
     print("Generating two key pairs")
 
+    parameters = {'p':2579,
+	'g':2}
+	
     elgamal1 = ElGamal.ElGamal()
     elgamal2 = ElGamal.ElGamal()
     elgamal3 = ElGamal.ElGamal()
@@ -87,17 +90,20 @@ def testSharedSecret():
 
     print("Generated shared key. Encrypting value 5")
     ciphertext = elgamal3.encrypt(5)
+    presult1 = pow(pow(ciphertext[0],2579-2,2579),elgamal1.keys["priv"]["d"],2579)
+    presult2 = pow(pow(ciphertext[0],2579-2,2579),elgamal2.keys["priv"]["d"],2579)
+    alpha = (presult1*presult2)%2579
+    result = (ciphertext[1]*alpha)%2579
+    #result1 = elgamal1.decrypt(ciphertext)
+    #result2 = elgamal2.decrypt(ciphertext)
     print("Decrypting and generating table")
     table = elgamal3.generate_lookup_table()
-    print(table[elgamal3.decrypt(ciphertext)])
+    print(table[result])
 
 
 def testProof(challenge,response,g,h,p,alpha,beta,message):
     A = (pow(g,response,p)*pow(pow(alpha,p-2,p),challenge,p))%p
-    print("Divisao")
-    print(beta/(pow(g,message,p)))
     B = (pow(h,response,p) * pow(pow(beta,p-2,p),challenge,p) * pow(g,(message*challenge),p))%p
-    #B = (pow(h,response,p)*pow(pow((beta//(pow(g,message))),p-2,p),challenge,p))%p   
     return A,B
 	
 print("Starting tests")
@@ -106,7 +112,7 @@ nTests = 1
 
 for i in range(nTests):
     print("Generating parameters")
-
+    ''''
     parameters = {'p':2579,
 	'g':2}
     elgamal = ElGamal.ElGamal()
@@ -123,7 +129,8 @@ for i in range(nTests):
             "d":765
             }
         }
-	
+		
+    
     result1 = elgamal.encrypt(1)
     result2 = elgamal.encrypt(0)
     alpha = result1[0] * result2[0]
@@ -173,8 +180,7 @@ for i in range(nTests):
     print("B1")
     print(B1)
     print(results1[1])
-	
-    '''
+
     schnorr = Schnorr.Schnorr()
     schnorr.keys={
             "pub":{
@@ -242,9 +248,9 @@ for i in range(nTests):
     
     #testElGamal()
     #testSchnorr()
-
-    #testSharedSecret()
     '''
+    testSharedSecret()
+
 #print("")
 #print("Tests Ended with Success")
 
