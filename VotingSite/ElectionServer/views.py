@@ -675,6 +675,28 @@ def bulletinBoard(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET'])
 
+@login_required
+def auditBallot(request,election_id):
+    if request.method == 'GET':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            raise Http404("Election does not exist")
+        questions = getQuestionsAux(election)
+        try:
+            voter = Voter.objects.get(identifier=request.user,election=election)
+        except Voter.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Voter is not eligible for this election'}),
+                content_type='application/json', status=404)
+        randoms = voter.proofRandomValues
+        if randoms:
+            return render(request,"auditBallot.html",{'election':election,'questions':json.dumps(questions),'randoms':randoms})
+        else:
+            return HttpResponse(json.dumps({'error':'Voter didn\'t access ballot box to create a ballot'}),
+                content_type='application/json', status=404)
+    else:
+        return HttpResponseNotAllowed(['GET'])
+
 def getQuestionsAux(election):
     data = {"questionList":[]}
     for question in Question.objects.all().filter(election=election):

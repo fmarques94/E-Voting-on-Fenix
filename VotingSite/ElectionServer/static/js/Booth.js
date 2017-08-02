@@ -43,10 +43,21 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
                 BOOTH.boothForm.html("<p>Your smart ballot tracker is</p>"+
                 "<p><b>"+data[2]+"</b></p>"+
                 "<p>Save this value in order to verify your ballot on the bulletin board.</p>"+
-                "<input type=\"submit\" class=\"submitButton\" value=\"Cast Ballot\">");
+                "<p>If you wish to audit the ballot you may do so but you will need to do a new ballot after.</p>"+
+                "<input type=\"submit\" class=\"submitButton\" value=\"Cast Ballot\">"+
+                "<a class=\"submitButton\" href=\"javascript:BOOTH.audit()\">Audit Ballot</a>");
             });
             //this.encAndSign();
         }
+    }
+
+    this.audit = function(){
+        BOOTH.boothForm.attr("action","");
+        BOOTH.boothForm.html(
+            "<p>To audit the ballot, copy it from bellow and go to the <a href=\""+auditor+"\">ballot auditor</a>.</p>"+
+            "There you just need to paste the ballot and click the audit button."+
+            "<textarea rows=\"20\" style=\"width:100%\">"+JSON.stringify(this.ballot)+"</textarea>"
+        );
     }
 
     this.castBallot = function(){

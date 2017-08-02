@@ -11,30 +11,27 @@
 <script src="{% static 'js/vkthread/vkthread.min.js' %}"></script>
 <script class="import" src="{% static 'js/ElGamal.js' %}"></script>
 <script class="import" src="{% static 'js/Schnorr.js' %}"></script>
-<script src="{% static 'js/Booth.js' %}"></script>
-<script src="{% static 'js/ballotBox.js' %}"></script>
+<script src="{% static 'js/auditBallot.js' %}"></script>
 <script>
     var cryptoParameters = {{election.cryptoParameters|safe}};
     var questionList = JSON.parse("{{questions|escapejs}}");
     var pk = "{{election.publicKey|escapejs}}";
     var token = '{{ csrf_token }}';
-    var auditor = "{% url 'auditBallot' election_id=election.id %}"
+    var proofRandoms = {{randoms|safe}};
 </script>
-
 {% endblock %}
 
 {% block content %}
 <h2>{{election.name}}</h2>
 
-<form id="ballotBoxForm" action="javascript:getCredentials()">
+<form id="auditForm" action="javascript:audit()">
     <fieldset>
-        <legend><h2>Credentials</h2></legend>
-        <b>Secret Credential:</b><br>
-        <textarea name="secret" rows="3" style="width:50%" autocomplete="off" required></textarea><br>
-        <b>Public Credential:</b><br>
-        <textarea name="public" rows="3" style="width:50%" autocomplete="off" required></textarea><br>
-        <input type="submit" class="submitButton" value="Next">
+        <legend><h2>Ballot</h2></legend>
+        <b>Paste yout ballot here:</b><br>
+        <textarea name="ballot" rows="20" style="width:100%" autocomplete="off" required></textarea><br>
+        <input type="submit" class="submitButton" value="Audit">
     </fieldset>
 </form>
 
+<div class="results"></div>
 {% endblock %}
