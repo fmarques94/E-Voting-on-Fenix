@@ -9,8 +9,13 @@ function ElGamal(p,g,h){
         return [y.toString(10),priv.toString(16)]
     }
 
-    this.encrypt = function(encrypt){
-        var k = this.generateNumberBelowP();
+    this.encrypt = function(encrypt, random=null){
+        if(random==null){
+            var k = this.generateNumberBelowP();
+        }
+        else{
+            var k = new BigInteger(random,10);
+        }
         var c1 = this.g.modPow(k,this.p)
         var value = new BigInteger(encrypt.toString(),10)
         var c2 = ((this.h.modPow(k,this.p)).multiply(this.g.modPow(value,this.p))).mod(this.p)

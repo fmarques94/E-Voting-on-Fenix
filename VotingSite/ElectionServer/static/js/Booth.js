@@ -45,7 +45,7 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
                 "<p>Save this value in order to verify your ballot on the bulletin board.</p>"+
                 "<p>If you wish to audit the ballot you may do so but you will need to do a new ballot after.</p>"+
                 "<input type=\"submit\" class=\"submitButton\" value=\"Cast Ballot\">"+
-                "<a class=\"submitButton\" href=\"javascript:BOOTH.audit()\">Audit Ballot</a>");
+                "<a class=\"submitButton\" target=\"_blank\" href=\"javascript:BOOTH.audit()\">Audit Ballot</a>");
             });
             //this.encAndSign();
         }
@@ -147,14 +147,6 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
         this.ballot["signature"].push(signature[1].toString(10))
         this.ballotToSend["signature"] = this.ballot["signature"] 
         var payload = {'ballot':this.ballotToSend,'publicCredential':this.credentials["public"]}
-
-        /*for(i=0;i<this.ballot["answerList"].length;i++){
-            questionAnswer = this.ballot["answerList"][i]
-            for(j=0;j<questionAnswer["answers"].length;j++){
-                answer = questionAnswer["answers"][j]
-                delete answer["randomness"];
-            }
-        }*/
         
         return [this.ballot,payload,sjcl.codec.hex.fromBits(sjcl.hash.sha256.hash(JSON.stringify(payload)))];        
     }
