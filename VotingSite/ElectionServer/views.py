@@ -487,7 +487,6 @@ def cast(request,election_id):
             if datetime.datetime.now() <= election.startDate:
                 return render(request,"closedBallotBox.html",{'election':election})
             if datetime.datetime.now() >= election.endDate:
-                printf("Right path")
                 return render(request,"closedBallotBox.html",{'election':election})
             if election.openCastTime!=None and election.closeCastTime!=None:
                 return render(request,"closedBallotBox.html",{'election':election})

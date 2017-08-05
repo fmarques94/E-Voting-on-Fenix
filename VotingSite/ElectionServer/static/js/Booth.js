@@ -145,6 +145,7 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
         signature = this.schnorr.sign(hash);
         this.ballot["signature"].push(signature[0].toString(10))
         this.ballot["signature"].push(signature[1].toString(10))
+        this.ballot["publicCredential"] = this.publicCredential.toString(10);
         this.ballotToSend["signature"] = this.ballot["signature"] 
         var payload = {'ballot':this.ballotToSend,'publicCredential':this.credentials["public"]}
         
