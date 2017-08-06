@@ -19,6 +19,8 @@ class Election(models.Model):
     cryptoParameters = models.TextField()
     admin = models.ForeignKey(FenixUser, on_delete = models.CASCADE)
     publicKey = models.TextField()
+    aggregatedEncTally = models.TextField(null=True)
+    tally = models.TextField(null=True)
 
 class Trustee(models.Model):
     election = models.ForeignKey(Election,on_delete = models.CASCADE)
@@ -26,6 +28,7 @@ class Trustee(models.Model):
     name = models.TextField()
     email = models.EmailField(max_length=200)
     publicKeyShare = models.TextField()
+    partialDecryption = models.TextField(null=True)
     class Meta:
         unique_together = (('election','identifier'),)
     
@@ -35,6 +38,7 @@ class Voter(models.Model):
     email = models.EmailField(max_length=200)
     publicCredential = models.TextField()
     proofRandomValues = models.TextField(null=True)
+    paperVoter = models.BooleanField(default=False)
     class Meta:
         unique_together = (('election','identifier'),)
 

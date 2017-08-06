@@ -38,7 +38,6 @@ function Schnorr(p,q,g,a){
         var s2 = new BigInteger(signature[1],10);
 
         var aux = ((this.g.modPow(s2,this.p)).multiply((pCredential.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(s1,this.p))).mod(this.p);
-
         
         return s1.toString(16)==sjcl.codec.hex.fromBits(sjcl.hash.sha256.hash(message.toString(10)+aux.toString(10)));
     }

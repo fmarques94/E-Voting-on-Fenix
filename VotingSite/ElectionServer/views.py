@@ -185,7 +185,7 @@ def addVoters(request,election_id):
         except IntegrityError:
             return HttpResponse(json.dumps({
                 'error':'Voter with id ' + row[0] + 'is already in the election'
-                }), content_type='application/json')
+                }), content_type='application/json',status=500)
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
         return HttpResponse(json.dumps({
@@ -206,7 +206,7 @@ def addVoters(request,election_id):
         except IntegrityError:
             return HttpResponse(json.dumps({
                 'error':'Voter with id ' + voterData['id'] + 'is already in the election'
-                }), content_type='application/json')
+                }), content_type='application/json',status=500)
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
         return HttpResponse(json.dumps({
@@ -451,10 +451,8 @@ def cast(request,election_id):
                             if int(answerData['individualProof'][0]['A'])==proof0[0] and int(answerData['individualProof'][0]['B'])==proof0[1] and int(answerData['individualProof'][1]['A'])==proof1[0] and int(answerData['individualProof'][1]['B'])==proof1[1]:
                                 continue
                             else:
-                                print("One")
                                 return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
                         else:
-                            print("Two")
                             return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
                     random = int(randoms['randomLists'][i]['overall_random'])
                     if random == (int(question['overall_proof'][0]['challenge']) + int(question['overall_proof'][1]['challenge']))%p:
@@ -463,10 +461,8 @@ def cast(request,election_id):
                         if int(question['overall_proof'][0]['A'])==proof0[0] and int(question['overall_proof'][0]['B'])==proof0[1] and int(question['overall_proof'][1]['A'])==proof1[0] and int(question['overall_proof'][1]['B'])==proof1[1]:
                             continue
                         else:
-                            print("Three")
                             return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
                     else:
-                        print("Four")
                         return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
                 signMessage = signMessage%p
                 if not schnorr.verify([int(data['ballot']['signature'][0]),int(data['ballot']['signature'][1])],signMessage):
@@ -528,7 +524,12 @@ def election(request,election_id):
         except Election.DoesNotExist:
             raise Http404("Election does not exist")
         if request.user == election.admin:
-            return render(request,'manageElection.html',{'election':election})
+            endOfElection = False
+            if datetime.datetime.now() >= election.endDate:
+                endOfElection = True
+            return render(request,'manageElection.html',{'election':election,'endOfElection':endOfElection})
+        else:
+            return HttpResponseForbidden("Access denied")
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -589,7 +590,7 @@ def trustee(request,election_id):
     def postMethodTrustee(election,trustee):
         if datetime.datetime.now() < election.startDate:
             if 'pk' in json.loads(trustee.publicKeyShare.replace('\'','"')):
-                return HttpResponse(json.dumps({'error':'You have already generated a key share'}), content_type='application/json')
+                return HttpResponse(json.dumps({'error':'You have already generated a key share'}), content_type='application/json',status=500)
             else:
                 data = json.loads(request.body.decode('utf-8'))
                 if 'pk' in data:
@@ -600,7 +601,7 @@ def trustee(request,election_id):
                         return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
                     return HttpResponse(json.dumps({'success':True}), content_type='application/json')
                 else:
-                    return HttpResponse(json.dumps({'error':'Bad json. Does not have necessary elements.'}), content_type='application/json')
+                    return HttpResponse(json.dumps({'error':'Bad json. Does not have necessary elements.'}), content_type='application/json',status=500)
         elif datetime.datetime.now() > election.endDate:
             return
         else:
@@ -707,3 +708,125 @@ def getQuestionsAux(election):
             questionData["answers"].append(answer.answer)
         data["questionList"].append(questionData)
     return data
+
+@login_required
+def managePaperVotes(request,election_id):
+    if request.method == 'GET':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            raise Http404("Election does not exist")
+        if request.user == election.admin:
+            if datetime.datetime.now() >= election.endDate:
+                return render(request,'managePaperVotes.html',{'election':election})
+            else:
+                return HttpResponseForbidden("Election has not yet ended. Cannot manage paper votes without election ending.")
+        else:
+            return HttpResponseForbidden("Access denied")
+    else:
+        return HttpResponseNotAllowed(['GET'])
+
+
+
+@login_required
+def manageTally(request,election_id):
+    if request.method == 'GET':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            raise Http404("Election does not exist")
+        if request.user == election.admin:
+            if datetime.datetime.now() >= election.endDate:
+                return render(request,'manageTally.html',{'election':election})
+            else:
+                return HttpResponseForbidden("Election has not yet ended. Cannot manage paper votes without election ending.")
+        else:
+            return HttpResponseForbidden("Access denied")
+    else:
+        return HttpResponseNotAllowed(['GET'])
+
+@login_required
+def addPaperVoters(request,election_id):
+
+    def addPaperVotersFile(request,election):
+        try:
+            csvfile = request.FILES['csv']
+            reader = csv.reader(csvfile.read().decode('utf-8-sig').split('\n'),delimiter=";")
+            with transaction.atomic():
+                for row in reader:
+                    if(len(row)>0):
+                        voter = Voter.objects.get(identifier=row[0],election=election)
+                        voter.paperVoter = True
+                        voter.save()
+        except Voter.DoesNotExist:
+            return HttpResponse(json.dumps({
+                'error':'Voter with id ' + row[0] + 'is not an eligible voter.'
+                }), content_type='application/json',status=500)
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
+        return HttpResponse(json.dumps({
+                'success':True
+                }), content_type='application/json')
+
+    @csrf_exempt
+    def addPaperVotersJson(request,election):
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            with transaction.atomic():
+                for voterData in data['voterList']:
+                    voter = Voter.objects.get(identifier=voterData['id'],election=election)
+                    voter.paperVoter = True
+                    voter.save()
+        except Voter.DoesNotExist:
+            return HttpResponse(json.dumps({
+                'error':'Voter with id ' + voterData['id'] + 'is not an eligible voter.'
+                }), content_type='application/json', status=500)
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
+        return HttpResponse(json.dumps({
+                'success':True
+                }), content_type='application/json')
+
+    if request.method == 'POST':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        if datetime.datetime.now() <= election.endDate:
+            return HttpResponse(json.dumps({'error':'The election has not ended. Cannot add paper voters yet!'}),
+             content_type='application/json', status=404)
+        if request.FILES:
+            return addVotersFile(request,election)
+        else:
+            return addVotersJson(request,election)
+    else:
+        return HttpResponseNotAllowed(['POST'])
+
+@login_required
+@csrf_exempt
+def removePaperVoters(request,election_id):
+    if request.method == 'POST':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        if datetime.datetime.now() <= election.endData:
+            return HttpResponse(json.dumps({'error':'The election has not ended. Cannot manage paper voters.'}),
+             content_type='application/json', status=404)
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            for voterData in data['voterList']:
+                Voter.objects.get(identifier=voterData,election=election).paperVoter = False
+            return HttpResponse(json.dumps({
+                'success':True
+                }),content_type='application/json') 
+        except Voter.DoesNotExist:
+            pass
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)  
+    else:
+        return HttpResponseNotAllowed(['POST'])
