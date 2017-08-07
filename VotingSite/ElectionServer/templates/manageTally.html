@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>{% autoescape on %}{{election.name}}{% endautoescape %}</title>        
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/manageTally.css' %}" />
+<script src="{% static 'js/manageTally.js' %}"></script>
+<script>
+    var questionList = JSON.parse("{{questions|escapejs}}");
+</script>
+{% endblock %}
+
+{% block content %}
+<h2>{{election.name}}</h2>
+{% if election.hybrid and not election.aggregatedEncTally %}
+    <form id="addPaperVoterForm" action="javascript:fileSubmit('{{ csrf_token }}','{% url 'manageTally' election_id=election.id %}','{% url 'addVoters' election_id=election.id %}')">
+        <fieldset>
+            <legend><h2>Add Voters CSV File</h2></legend>
+            <input type="file" name="csv" accept=".csv" required>
+            <input class="button" type="submit">
+        </fieldset>
+    </form>
+
+    <a class="button" id="addPaperResults" href="javascript:addPaperResuls()">Next</a><br><br>
+
+    <a class="button" id="toogleButton" href="javascript:togglePaperVoterList()">Hide Paper Voters List</a><br><br>
+    <div class="VoterList">
+        {% if paperVoters %}
+        <table>
+            <tr>
+                <th></th>
+                <th>Id</th>
+            </tr>
+            {% for voter in paperVoters%}
+            <tr>
+                <td>>[<a href="javascript:removePaperVoter('{{ csrf_token }}','{% url 'manageTally' election_id=election.id %}','{% url 'removePaperVoters' election_id=election.id %}','{{voter.identifier|escapejs}}')">X</a>]</td>
+                <td>voter.identifier</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+{% elif not election.hybrid and not election.aggregatedEncTally %}
+    <a class="button" href="javascript:aggregateEncTally('{{ csrf_token }}','{% url 'submitAggregatedTally' election_id=election.id %}')">Aggregate encrypted Tally</a>
+{% elif election.aggregatedEncTally and not election.tally and not ready %}
+    <p>Please wait until all trustees have made their partial decryptions.</p>
+{% elif election.aggregatedEncTally and not election.tally and ready %}
+    <a class="button" href="javascript:aggregateEncTally('{{ csrf_token }}','{% url 'submitAggregatedTally' election_id=election.id %}')">Aggreate and Publish Results</a>
+{% endblock %}

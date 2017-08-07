@@ -21,6 +21,11 @@ function submit(token){
     payload = {};
     payload['name'] = $('#createElectionForm input:text[name=name]').val();
     payload['description'] = $('#createElectionForm textarea[name=description]').val();
+    if($('#createElectionForm input:radio[name=paperVotes]:checked').val()=='true'){
+        payload['paperVotes'] = true;
+    }else{
+        payload['paperVotes'] = false;
+    }
     payload['startDate'] = $('#createElectionForm input:text[name=startDate]').val() + ' ' + $('#createElectionForm input:text[name=startTime]').val();
     payload['endDate'] = $('#createElectionForm input:text[name=endDate]').val() + ' ' + $('#createElectionForm input:text[name=endTime]').val();
     if($('#createElectionForm input:radio[name=castTimeRadioButton]:checked').val()=='true'){

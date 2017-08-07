@@ -58,7 +58,6 @@
 <a class="ManageButton" href="{% url 'manageVoters' election_id=election.id %}">Manage Voters</a>
 
 {% if endOfElection %}
-<a class="ManageButton" href="{% url 'managePaperVotes' election_id=election.id %}">Manage Paper Votes</a>
 <a class="ManageButton" href="{% url 'manageTally' election_id=election.id %}">Manage Tally</a>
 {% endif %}
 

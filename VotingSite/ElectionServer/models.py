@@ -19,8 +19,10 @@ class Election(models.Model):
     cryptoParameters = models.TextField()
     admin = models.ForeignKey(FenixUser, on_delete = models.CASCADE)
     publicKey = models.TextField()
+    hybrid = models.BooleanField()
     aggregatedEncTally = models.TextField(null=True)
     tally = models.TextField(null=True)
+    paperResults = models.TextField(null=True)
 
 class Trustee(models.Model):
     election = models.ForeignKey(Election,on_delete = models.CASCADE)

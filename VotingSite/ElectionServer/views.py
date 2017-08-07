@@ -57,6 +57,7 @@ def createElection(request):
             election = Election()
             election.name = data['name']
             election.description = data['description']
+            election.hybrid = data['paperVotes']
             election.startDate = data['startDate'] #datetime.datetime.strptime(data['startDate'],'%d-%m-%Y %H:%M')
             election.endDate = data['endDate']#datetime.datetime.strptime(data['endDate'],'%d-%m-%Y %H:%M')
             if datetime.datetime.strptime(data['startDate'],'%Y-%m-%d %H:%M') < datetime.datetime.now():
@@ -710,25 +711,6 @@ def getQuestionsAux(election):
     return data
 
 @login_required
-def managePaperVotes(request,election_id):
-    if request.method == 'GET':
-        try:
-            election = Election.objects.get(id=election_id)
-        except Election.DoesNotExist:
-            raise Http404("Election does not exist")
-        if request.user == election.admin:
-            if datetime.datetime.now() >= election.endDate:
-                return render(request,'managePaperVotes.html',{'election':election})
-            else:
-                return HttpResponseForbidden("Election has not yet ended. Cannot manage paper votes without election ending.")
-        else:
-            return HttpResponseForbidden("Access denied")
-    else:
-        return HttpResponseNotAllowed(['GET'])
-
-
-
-@login_required
 def manageTally(request,election_id):
     if request.method == 'GET':
         try:
@@ -737,7 +719,8 @@ def manageTally(request,election_id):
             raise Http404("Election does not exist")
         if request.user == election.admin:
             if datetime.datetime.now() >= election.endDate:
-                return render(request,'manageTally.html',{'election':election})
+                paperVoters = Voter.objects.filter(election=election,paperVoter=True)
+                return render(request,'manageTally.html',{'election':election,'paperVoters':paperVoters})
             else:
                 return HttpResponseForbidden("Election has not yet ended. Cannot manage paper votes without election ending.")
         else:
@@ -768,25 +751,6 @@ def addPaperVoters(request,election_id):
                 'success':True
                 }), content_type='application/json')
 
-    @csrf_exempt
-    def addPaperVotersJson(request,election):
-        try:
-            data = json.loads(request.body.decode('utf-8'))
-            with transaction.atomic():
-                for voterData in data['voterList']:
-                    voter = Voter.objects.get(identifier=voterData['id'],election=election)
-                    voter.paperVoter = True
-                    voter.save()
-        except Voter.DoesNotExist:
-            return HttpResponse(json.dumps({
-                'error':'Voter with id ' + voterData['id'] + 'is not an eligible voter.'
-                }), content_type='application/json', status=500)
-        except Exception as exception:
-            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
-        return HttpResponse(json.dumps({
-                'success':True
-                }), content_type='application/json')
-
     if request.method == 'POST':
         try:
             election = Election.objects.get(id=election_id)
@@ -800,7 +764,8 @@ def addPaperVoters(request,election_id):
         if request.FILES:
             return addVotersFile(request,election)
         else:
-            return addVotersJson(request,election)
+            return HttpResponse(json.dumps({'error':'No file submited'}),
+             content_type='application/json', status=404)
     else:
         return HttpResponseNotAllowed(['POST'])
 
