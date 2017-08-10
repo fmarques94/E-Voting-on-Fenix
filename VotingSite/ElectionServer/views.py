@@ -719,8 +719,9 @@ def manageTally(request,election_id):
             raise Http404("Election does not exist")
         if request.user == election.admin:
             if datetime.datetime.now() >= election.endDate:
-                paperVoters = Voter.objects.filter(election=election,paperVoter=True)
-                return render(request,'manageTally.html',{'election':election,'paperVoters':paperVoters})
+                paperVoters = Voter.objects.filter(election=election,paperVoter=True).values_list('identifier', flat=True)
+                print(paperVoters)
+                return render(request,'manageTally.html',{'election':election,'paperVoters':paperVoters,'questions':json.dumps(getQuestionsAux(election))})
             else:
                 return HttpResponseForbidden("Election has not yet ended. Cannot manage paper votes without election ending.")
         else:
@@ -762,7 +763,7 @@ def addPaperVoters(request,election_id):
             return HttpResponse(json.dumps({'error':'The election has not ended. Cannot add paper voters yet!'}),
              content_type='application/json', status=404)
         if request.FILES:
-            return addVotersFile(request,election)
+            return addPaperVotersFile(request,election)
         else:
             return HttpResponse(json.dumps({'error':'No file submited'}),
              content_type='application/json', status=404)
@@ -779,13 +780,15 @@ def removePaperVoters(request,election_id):
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
-        if datetime.datetime.now() <= election.endData:
+        if datetime.datetime.now() <= election.endDate:
             return HttpResponse(json.dumps({'error':'The election has not ended. Cannot manage paper voters.'}),
              content_type='application/json', status=404)
         try:
             data = json.loads(request.body.decode('utf-8'))
             for voterData in data['voterList']:
-                Voter.objects.get(identifier=voterData,election=election).paperVoter = False
+                voter = Voter.objects.get(identifier=voterData,election=election)
+                voter.paperVoter = False
+                voter.save()
             return HttpResponse(json.dumps({
                 'success':True
                 }),content_type='application/json') 
@@ -793,5 +796,42 @@ def removePaperVoters(request,election_id):
             pass
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)  
+    else:
+        return HttpResponseNotAllowed(['POST'])
+
+def submitPaperResults(request,election_id):
+    if request.method == 'POST':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        if datetime.datetime.now() <= election.endDate:
+            return HttpResponse(json.dumps({'error':'The election has not ended. Cannot submit paper voting results.'}),
+             content_type='application/json', status=404)
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            questions = getQuestionsAux(election)
+            for i,question in enumerate(questions['questionList']):
+                if question['question'] not in data.keys():
+                    return HttpResponse(json.dumps({'error':'Incomplete Results.'}), content_type='application/json', status=500)
+                for answer in questions['questionList'][i]['answers']:
+                    if answer not in data[question['question']].keys():
+                        return HttpResponse(json.dumps({'error':'Incomplete Results.'}), content_type='application/json', status=500)
+            numberOfPaperVoters = len(Voter.objects.filter(election=election,paperVoter=True))
+            for question in data:
+                numberOfPaperVotes = 0
+                for answer in data[question]:
+                    numberOfPaperVotes = numberOfPaperVotes + int(data[question][answer])
+                if numberOfPaperVoters!=numberOfPaperVotes:
+                    return HttpResponse(json.dumps({'error':'Number of paper votes and voters doesn\'t match. Please review them'}), content_type='application/json', status=500)
+            election.paperResults = data
+            election.save()
+            return HttpResponse(json.dumps({
+                'success':True
+                }),content_type='application/json') 
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
     else:
         return HttpResponseNotAllowed(['POST'])

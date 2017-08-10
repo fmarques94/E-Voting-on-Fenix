@@ -32,6 +32,7 @@ urlpatterns = [
     url(r'^election/(?P<election_id>'+uuidRegEx+')/manageTally/$', views.manageTally, name='manageTally'),
     url(r'^election/(?P<election_id>'+uuidRegEx+')/addPaperVoters/$', views.addPaperVoters, name='addPaperVoters'),
     url(r'^election/(?P<election_id>'+uuidRegEx+')/removePaperVoters/$', views.removePaperVoters, name='removePaperVoters'),
+    url(r'^election/(?P<election_id>'+uuidRegEx+')/submitPaperResults/$', views.submitPaperResults, name='submitPaperResults'),
     url(r'^trusteeElectionList/$', views.trusteeElectionList, name='trusteeList'),
     url(r'^election/(?P<election_id>'+uuidRegEx+')/trustee/$', views.trustee, name='trustee'),
     url(r'^login/$', views.login, name='login'),
