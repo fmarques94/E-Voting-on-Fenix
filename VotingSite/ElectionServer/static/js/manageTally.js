@@ -1,5 +1,6 @@
 var currentQuestion=0;
 var paperResults = {}
+var aggregatedEncTally = {}
 
 function addPaperResuls(){
     $('.manageTallyContent').html(
@@ -126,4 +127,34 @@ function removePaperVoter(token,currentUrl,redirectUrl,voterId){
     dataType: "json",
     contentType : "application/json",
     });
+}
+
+function aggregateEncTally(token,currentUrl,redirectUrl){
+    for(var i=0;i<questionList['questionList'].length;i++){
+        question = questionList['questionList'][i];
+        aggregatedEncTally[question['question']] = {}
+        for(var j=0;j<question["answers"].length;j++){
+            for(var ballotIndex=0;ballotIndex<ballots.length;ballotIndex++){
+                ballotAnswers = ballots[ballotIndex]['answerList'][i]['answers'][j];
+                console.log(ballotAnswers)
+                if(question["answers"][j] in aggregatedEncTally[question['question']]){
+                    var alpha = aggregatedEncTally[question['question']][question["answers"][j]]["alpha"]
+                    var beta = aggregatedEncTally[question['question']][question["answers"][j]]["beta"]
+                    var aux = {
+                        "alpha": (alpha.multiply(new BigInteger(ballotAnswers['alpha'],10))).mod(p),
+                        "beta": (beta.multiply(new BigInteger(ballotAnswers['beta'],10))).mod(p)
+                    }
+                    aggregatedEncTally[question['question']][question["answers"][j]] = aux;
+                }else{
+                    var aux = {
+                        "alpha": new BigInteger(ballotAnswers['alpha'],10),
+                        "beta": new BigInteger(ballotAnswers['beta'],10)
+                    }
+                    aggregatedEncTally[question['question']][question["answers"][j]] = aux;
+                }
+            }
+            aggregatedEncTally[question['question']][question["answers"][j]]["alpha"] = aggregatedEncTally[question['question']][question["answers"][j]]["alpha"].toString(10);
+            aggregatedEncTally[question['question']][question["answers"][j]]["beta"] = aggregatedEncTally[question['question']][question["answers"][j]]["beta"].toString(10);
+        }
+    }
 }

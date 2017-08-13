@@ -5,6 +5,8 @@
 {% load static %}
 <link rel="stylesheet" type="text/css" href="{% static 'style/manageTally.css' %}" />
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script class="import" src="{% static 'js/jsbn.js' %}"></script>
+<script class="import" src="{% static 'js/jsbn2.js' %}"></script>
 <script src="{% static 'js/manageTally.js' %}"></script>
 <script>
     var questionList = JSON.parse("{{questions|escapejs}}");
@@ -12,6 +14,9 @@
     var currentUrl = "{% url 'manageTally' election_id=election.id %}"
     {% if election.hybrid and not election.aggregatedEncTally %}
     var paperResultsUrl = "{% url 'submitPaperResults' election_id=election.id %}"
+    {% elif not election.hybrid and not election.aggregatedEncTally or election.hybrid and not election.aggregatedEncTally and election.paperResults %}
+    var ballots = JSON.parse("{{finalBallots|escapejs}}")['ballotList'];
+    var p = new BigInteger("{{p}}",10)
     {% endif %}
 </script>
 {% endblock %}

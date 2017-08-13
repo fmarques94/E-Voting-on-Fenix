@@ -57,6 +57,6 @@ class Ballot(models.Model):
     election = models.ForeignKey(Election,on_delete = models.CASCADE)
     ballot = models.TextField()
     publicCredential = models.TextField()
-    SBT = models.TextField()
+    SBT = models.TextField()        #SBT = smart Ballot Tracker
     class Meta:
         unique_together = (('election','publicCredential'),)

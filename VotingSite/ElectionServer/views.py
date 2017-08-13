@@ -719,9 +719,15 @@ def manageTally(request,election_id):
             raise Http404("Election does not exist")
         if request.user == election.admin:
             if datetime.datetime.now() >= election.endDate:
-                paperVoters = Voter.objects.filter(election=election,paperVoter=True).values_list('identifier', flat=True)
-                print(paperVoters)
-                return render(request,'manageTally.html',{'election':election,'paperVoters':paperVoters,'questions':json.dumps(getQuestionsAux(election))})
+                paperVoters = Voter.objects.filter(election=election,paperVoter=True)
+                paperVotersIdentifiers = paperVoters.values_list('identifier', flat=True)
+                paperVoterCredentials = paperVoters.values_list('publicCredential', flat=True)
+                ballots = []
+                for b in Ballot.objects.exclude(publicCredential__in=paperVoterCredentials).values_list('ballot', flat=True):
+                    ballots.append(json.loads(b.replace('\'','"')))
+                finalEBallots = json.dumps({"ballotList":ballots})
+                p = json.loads(election.cryptoParameters.replace('\'','"'))['p']
+                return render(request,'manageTally.html',{'election':election,'paperVoters':paperVotersIdentifiers,'questions':json.dumps(getQuestionsAux(election)),'finalBallots':finalEBallots,'p':p})
             else:
                 return HttpResponseForbidden("Election has not yet ended. Cannot manage paper votes without election ending.")
         else:
@@ -835,3 +841,6 @@ def submitPaperResults(request,election_id):
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
     else:
         return HttpResponseNotAllowed(['POST'])
+
+def submitEncryptedTally(request,election_id):
+    print("Not Implemented")
