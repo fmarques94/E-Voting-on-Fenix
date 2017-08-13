@@ -29,8 +29,10 @@ class Trustee(models.Model):
     identifier = models.TextField()
     name = models.TextField()
     email = models.EmailField(max_length=200)
-    publicKeyShare = models.TextField()
+    publicKeyShare = models.TextField(null=True)
     partialDecryption = models.TextField(null=True)
+    keyShareProofRandom = models.TextField(null=True)
+    decryptionProofRandom = models.TextField(null=True)
     class Meta:
         unique_together = (('election','identifier'),)
     
@@ -45,13 +47,18 @@ class Voter(models.Model):
         unique_together = (('election','identifier'),)
 
 class Question(models.Model):
-    election = models.ForeignKey(Election,on_delete = models.CASCADE)
     id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    election = models.ForeignKey(Election,on_delete = models.CASCADE)
     question = models.TextField()
+    class Meta:
+        unique_together = (('election','question'),)
 
 class Answer(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
     question = models.ForeignKey(Question,on_delete = models.CASCADE)
     answer = models.TextField()
+    class Meta:
+        unique_together = (('question','answer'),)
 
 class Ballot(models.Model):
     election = models.ForeignKey(Election,on_delete = models.CASCADE)

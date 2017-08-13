@@ -1,4 +1,4 @@
-function generateKeyShare(cryptoParam,publicKeyShare,token){
+function generateKeyShare(cryptoParam,random,token){
 
     p = new BigInteger(cryptoParam['p'],10);
     g = new BigInteger(cryptoParam['g'],10);
@@ -17,7 +17,7 @@ function generateKeyShare(cryptoParam,publicKeyShare,token){
 
     x = new BigInteger(keys[1],16);
     h = new BigInteger(keys[0],10);
-    e = new BigInteger(publicKeyShare["random"],10);
+    e = new BigInteger(random,10);
 
     /*Calculate proof*/
 
@@ -37,7 +37,6 @@ function generateKeyShare(cryptoParam,publicKeyShare,token){
     payload = {
         "pk": h.toString(16),
         "proof":{
-            "e": publicKeyShare["random"],
             "r": r.toString(10),
             "s": s.toString(10)
         }

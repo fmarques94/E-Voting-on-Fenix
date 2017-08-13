@@ -113,7 +113,6 @@ def addTrustees(request,election_id):
                     trustee.identifier = trusteeData['id']
                     trustee.name = trusteeData['name']
                     trustee.email = trusteeData['email']
-                    trustee.publicKeyShare = json.dumps({"random":str(secrets.randbelow(int(ast.literal_eval(election.cryptoParameters)['p'])))})
                     trustee.save()
             return HttpResponse(json.dumps({'success':True}),content_type='application/json') 
         except Election.DoesNotExist:
@@ -294,13 +293,13 @@ def addQuestions(request,election_id):
                     question.election = election
                     question.question = questionData['question']
                     question.save()
-                    print("Q saved")
                     for answerData in questionData['answers']:
                         answer = Answer()
                         answer.question = question
                         answer.answer = answerData
                         answer.save()
-                        print("A saved")
+        except IntegrityError:
+            return HttpResponse(json.dumps({'error':"Cannot have duplicate question for the same election or duplicate answers for the same question"}), content_type='application/json', status=500) 
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
         return HttpResponse(json.dumps({'success':True}), content_type='application/json')      
@@ -419,6 +418,7 @@ def cast(request,election_id):
         except Ballot.DoesNotExist:
             #TODO verify ZK-proofs
             try:
+                questions = getQuestionsAux(election)
                 randoms = json.loads(voter.proofRandomValues)
                 cryptoParameters = json.loads(election.cryptoParameters.replace('\'','"'))
                 p = int(cryptoParameters['p'])
@@ -434,12 +434,16 @@ def cast(request,election_id):
                     "beta":int(data['publicCredential'])
                 }}
                 signMessage = 1
-                for i in range(0,len(data['ballot']['answerList'])):
-                    question = data['ballot']['answerList'][i]
+                for i,question in enumerate(questions["questionList"]):
+                    if question["id"] not in data["ballot"]:
+                        return HttpResponse(json.dumps({'error':'Ballot is not well formed'}), content_type='application/json', status=500)
+                    questionData = data['ballot'][question["id"]]
                     totalAlpha = 1
                     totalBeta = 1
-                    for j in range(0,len(question['answers'])):
-                        answerData = question['answers'][j]
+                    for j,answer in enumerate(question["answers"]):
+                        if answer["id"] not in questionData["answers"]:
+                            return HttpResponse(json.dumps({'error':'Ballot is not well formed'}), content_type='application/json', status=500)
+                        answerData = questionData["answers"][answer["id"]]
                         alpha = int(answerData['alpha'])
                         beta = int(answerData['beta'])
                         totalAlpha = totalAlpha * alpha
@@ -456,10 +460,10 @@ def cast(request,election_id):
                         else:
                             return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
                     random = int(randoms['randomLists'][i]['overall_random'])
-                    if random == (int(question['overall_proof'][0]['challenge']) + int(question['overall_proof'][1]['challenge']))%p:
-                        proof0 = testProof(int(question['overall_proof'][0]['challenge']),int(question['overall_proof'][0]['response']),g,h,p,totalAlpha,totalBeta,0)
-                        proof1 = testProof(int(question['overall_proof'][1]['challenge']),int(question['overall_proof'][1]['response']),g,h,p,totalAlpha,totalBeta,1)
-                        if int(question['overall_proof'][0]['A'])==proof0[0] and int(question['overall_proof'][0]['B'])==proof0[1] and int(question['overall_proof'][1]['A'])==proof1[0] and int(question['overall_proof'][1]['B'])==proof1[1]:
+                    if random == (int(questionData['overall_proof'][0]['challenge']) + int(questionData['overall_proof'][1]['challenge']))%p:
+                        proof0 = testProof(int(questionData['overall_proof'][0]['challenge']),int(questionData['overall_proof'][0]['response']),g,h,p,totalAlpha,totalBeta,0)
+                        proof1 = testProof(int(questionData['overall_proof'][1]['challenge']),int(questionData['overall_proof'][1]['response']),g,h,p,totalAlpha,totalBeta,1)
+                        if int(questionData['overall_proof'][0]['A'])==proof0[0] and int(questionData['overall_proof'][0]['B'])==proof0[1] and int(questionData['overall_proof'][1]['A'])==proof1[0] and int(questionData['overall_proof'][1]['B'])==proof1[1]:
                             continue
                         else:
                             return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
@@ -545,8 +549,10 @@ def manageTrustees(request,election_id):
             return HttpResponseForbidden("Access denied")
         keyshares = {}
         for trustee in Trustee.objects.filter(election=election):
-            if 'pk' in json.loads(trustee.publicKeyShare.replace('\'','"')):
-                keyshares[trustee.identifier] = json.loads(trustee.publicKeyShare.replace('\'','"'))
+            if trustee.publicKeyShare:
+                if 'pk' in json.loads(trustee.publicKeyShare.replace('\'','"')):
+                    keyshares[trustee.identifier] = json.loads(trustee.publicKeyShare.replace('\'','"'))
+                    keyshares[trustee.identifier]["proof"]["e"] = trustee.keyShareProofRandom
         return render(request,'manageTrustees.html',{'election':election,'keyShares': keyshares})
     else:
         return HttpResponseNotAllowed(['GET'])
@@ -582,15 +588,23 @@ def trustee(request,election_id):
 
     def getMethodTrustee(election,trustee):
         if datetime.datetime.now() < election.startDate:
-            return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee,'hasKeyShare':'pk' in json.loads(trustee.publicKeyShare.replace('\'','"'))})
+            try:
+                if not trustee.keyShareProofRandom:
+                    trustee.keyShareProofRandom = str(secrets.randbelow(int(ast.literal_eval(election.cryptoParameters)['p'])))
+                    trustee.save()
+                    return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee})
+                else:
+                    return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee})
+            except Exception as exception:
+                return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
         elif datetime.datetime.now() > election.endDate:
-            return render(request,'partialDecrypt.html',{'election':election,'trustee':trustee, 'hasKeyShare':'pk' in json.loads(trustee.publicKeyShare.replace('\'','"'))})
+            return render(request,'partialDecrypt.html',{'election':election,'trustee':trustee})
         else:
-            return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee, 'hasKeyShare':'pk' in json.loads(trustee.publicKeyShare.replace('\'','"')), 'started':True})
+            return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee, 'started':True})
 
     def postMethodTrustee(election,trustee):
         if datetime.datetime.now() < election.startDate:
-            if 'pk' in json.loads(trustee.publicKeyShare.replace('\'','"')):
+            if trustee.publicKeyShare:
                 return HttpResponse(json.dumps({'error':'You have already generated a key share'}), content_type='application/json',status=500)
             else:
                 data = json.loads(request.body.decode('utf-8'))
@@ -670,9 +684,20 @@ def bulletinBoard(request,election_id):
             raise Http404("Election does not exist")
         keyshares = {}
         for trustee in Trustee.objects.filter(election=election):
-            if 'pk' in json.loads(trustee.publicKeyShare.replace('\'','"')):
-                keyshares[trustee.identifier] = json.loads(trustee.publicKeyShare.replace('\'','"'))
-        return render(request,'bulletinBoard.html',{'election':election,'keyShares':keyshares})
+            if trustee.publicKeyShare:
+                if 'pk' in json.loads(trustee.publicKeyShare.replace('\'','"')):
+                    keyshares[trustee.identifier] = json.loads(trustee.publicKeyShare.replace('\'','"'))
+        voters = {}
+        for voter in Voter.objects.filter(election=election):
+            if voter.publicCredential:
+                try:
+                    ballot = Ballot.objects.get(election=election,publicCredential=voter.publicCredential)
+                    voters[voter.identifier] = ballot.SBT
+                except Ballot.DoesNotExist:
+                    voters[voter.identifier] = ""
+            else:
+                voters[voter.identifier] = ""
+        return render(request,'bulletinBoard.html',{'election':election,'keyShares':keyshares,'voters':voters})
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -705,8 +730,11 @@ def getQuestionsAux(election):
         questionData["id"] = str(question.id)
         questionData["question"] = question.question
         questionData["answers"] = []
-        for answer in Answer.objects.all().filter(question=question).order_by('id'):
-            questionData["answers"].append(answer.answer)
+        for answer in Answer.objects.all().filter(question=question):
+            questionData["answers"].append({
+                "id":str(answer.id),
+                "answer":answer.answer
+                })
         data["questionList"].append(questionData)
     return data
 
@@ -823,7 +851,7 @@ def submitPaperResults(request,election_id):
                 if question['question'] not in data.keys():
                     return HttpResponse(json.dumps({'error':'Incomplete Results.'}), content_type='application/json', status=500)
                 for answer in questions['questionList'][i]['answers']:
-                    if answer not in data[question['question']].keys():
+                    if answer["answer"] not in data[question['question']].keys():
                         return HttpResponse(json.dumps({'error':'Incomplete Results.'}), content_type='application/json', status=500)
             numberOfPaperVoters = len(Voter.objects.filter(election=election,paperVoter=True))
             for question in data:

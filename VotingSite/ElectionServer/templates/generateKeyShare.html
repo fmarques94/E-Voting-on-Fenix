@@ -13,7 +13,7 @@
 
 {% block content %}
 <h2>{{election.name}}</h2>
-{% if hasKeyShare %}
+{% if trustee.publicKeyShare %}
     <div class="message">
         <h3>You have already given your key share. Please wait until the end of the election.</h3>
     </div>
@@ -24,7 +24,7 @@
     </div>
     {% else %}
     <div id="keyShare">
-        <a class="button" id="generateKeyShareButton" href="javascript:generateKeyShare({{election.cryptoParameters}},{{trustee.publicKeyShare}},'{{csrf_token}}')">Generate Key Share</a>
+        <a class="button" id="generateKeyShareButton" href="javascript:generateKeyShare({{election.cryptoParameters}},'{{trustee.keyShareProofRandom}}','{{csrf_token}}')">Generate Key Share</a>
     </div>
     {% endif %}
 {% endif %}

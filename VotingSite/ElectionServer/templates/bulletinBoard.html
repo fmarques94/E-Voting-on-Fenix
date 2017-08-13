@@ -78,12 +78,13 @@
                 Smart Ballot Tracker    
             </th>
         </tr>
-        {% for voter in election.voter_set.all %}
+        {% for key,value in voters.items %}
         <tr>
             <td class="rowIdentifier" id="identifier">
-                {{voter.identifier}}
+                {{key}}
             </td>
-            <td>
+            <td style="text-align: center;">
+                {{value}}
             </td>
         </tr>
         {% endfor %}

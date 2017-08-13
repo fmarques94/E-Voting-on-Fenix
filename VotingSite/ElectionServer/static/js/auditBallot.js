@@ -28,11 +28,17 @@ function audit(){
     }
 
     vkthread.exec(param).then(function(data){
-
-        $('.results').append("<h4>Question Answers</h4>");
-        for(var i=0;i<data.length;i++){
-            $('.results').append("<p> Question: "+ data[i]["question"] +"</p>");
-            $('.results').append("<p> Answer: "+ data[i]["answer"]+"</p>");
+        
+        $('.results').append("<h4>Ballot Formation</h4>");
+        console.log(data[1].length);
+        if(data[0]){
+            for(var i=0;i<(data[1]).length;i++){
+                $('.results').append("<p> Question: "+ data[1][i]["question"] +"</p>");
+                $('.results').append("<p> Answer: "+ data[1][i]["answer"]+"</p>");
+            }
+        }else{
+            $('.results').append("<p> Ballot is not well formed.</p>");
+            return;
         }
 
         var param = {
@@ -50,6 +56,7 @@ function audit(){
                 $('.results').append("<p>Encryption check passed</p>");
             }else{
                 $('.results').append("<p>Encryption check failed on question: "+data+"</p>");
+                return;
             }
 
             var param = {
@@ -62,11 +69,11 @@ function audit(){
             vkthread.exec(param).then(function(data){
 
                 $('.results').append("<h4>Proofs Check</h4>");
-                //console.log("Here")
                 if(data[0]){
                     $('.results').append("<p>Proofs check passed</p>");
                 }else{
                     $('.results').append("<p>Proof check failed on "+data[1]+" proof of question: "+data[2]+"</p>");
+                    return;
                 }
 
                 var param = {
@@ -82,6 +89,7 @@ function audit(){
                         $('.results').append("<p>Signature check passed</p>");
                     }else{
                         $('.results').append("<p>Signature check failed</p>");
+                        return;
                     }
                 });
             });
@@ -94,9 +102,29 @@ function audit(){
 
 function checkAnswers(){
     data = []
-    for(var i=0;i<this.ballot['answerList'].length;i++){
-        data.push({'question':this.questionList[i]["question"],'answer':this.questionList[i]["answers"][this.ballot['answerList'][i]['answerIndex']]});
+    data.push(true);
+    ballotAnswers = [];
+    for(var i=0;i<this.questionList.length;i++){
+        if(this.questionList[i]["id"] in this.ballot){
+            for(var j=0;j<this.questionList[i]["answers"].length;j++){
+                if(this.questionList[i]["answers"][j]["id"] in this.ballot[this.questionList[i]["id"]]["answers"]){
+                    if(j==this.ballot[this.questionList[i]["id"]]["answer"]){
+                        ballotAnswers.push({
+                            "question":this.questionList[i]["question"],
+                            "answer":this.questionList[i]["answers"][j]["answer"]
+                        })
+                    }
+                }else{
+                    data[0] = false;
+                    return data;
+                }
+            }
+        }else{
+            data[0] = false;
+            return data;
+        }
     }
+    data.push(ballotAnswers);
     return data
 }
 
@@ -106,19 +134,23 @@ function checkEncryption(){
     this.g = new BigInteger(this.cryptoParameters['g'],10);
     this.elGamal = new ElGamal(this.p,this.g,this.electionPublicKey);
     var data = []
-    for(var i=0;i<this.ballot['answerList'].length;i++){
-        var question = this.questionList[i];
+    for(var i=0;i<this.questionList.length;i++){
+        var questionId = this.questionList[i]["id"];
         for(var j=0;j<this.questionList[i]["answers"].length;j++){
-            if(j==this.ballot['answerList'][i]['answerIndex']){
-                var result = this.elGamal.encrypt(1,this.ballot['answerList'][i]['answers'][j]["randomness"]);
+            var answerId = this.questionList[i]["answers"][j]["id"]
+            var answerData = this.ballot[questionId]["answers"][answerId];
+            if(j == this.ballot[questionId]["answer"]){
+                var result = this.elGamal.encrypt(1,answerData["randomness"]);
             }else{
-                var result = this.elGamal.encrypt(0,this.ballot['answerList'][i]['answers'][j]["randomness"]);
+                var result = this.elGamal.encrypt(0,answerData["randomness"]);
             }
-            if(result[0].toString(10) != this.ballot['answerList'][i]['answers'][j]["alpha"] && result[0].toString(10) != this.ballot['answerList'][i]['answers'][j]["beta"]){
-                return question['question']
+            console.log(result[0].toString(10))
+            if(result[0].toString(10) != answerData["alpha"] && result[1].toString(10) != answerData["beta"]){
+                return this.questionList[i]["question"]
             }
         }
     }
+
     return ""
 }
 
@@ -126,19 +158,19 @@ function checkProofs(){
     this.p = new BigInteger(this.cryptoParameters['p'],10);
     this.g = new BigInteger(this.cryptoParameters['g'],10);
     this.electionPublicKey = new BigInteger(this.pk,16);
-    for(var i=0;i<this.ballot['answerList'].length;i++){
-        var answers = this.ballot['answerList'][i]['answers']
-        var totalAlpha = new BigInteger('1',10)
-        var totalBeta = new BigInteger('1',10)
-        for(var j=0;j<answers.length;j++){
-            var alpha = new BigInteger(answers[j]["alpha"],10);
-            var beta = new BigInteger(answers[j]["beta"],10);
+
+    for(var i=0;i<this.questionList.length;i++){
+        var questionId = this.questionList[i]["id"];
+        var totalAlpha = new BigInteger('1',10);
+        var totalBeta = new BigInteger('1',10);
+        for(var j=0;j<this.questionList[i]["answers"].length;j++){
+            var answerId = this.questionList[i]["answers"][j]["id"];
+            var answerData = this.ballot[questionId]["answers"][answerId];
+            var alpha = new BigInteger(answerData["alpha"],10);
+            var beta = new BigInteger(answerData["beta"],10);
             totalAlpha = totalAlpha.multiply(alpha)
             totalBeta = totalBeta.multiply(beta)
-            var individualProof = answers[j]["individualProof"];
-            //console.log("Here2")
-            //console.log(this.randomProofs[i]["individual_random"][j])
-            //console.log(((new BigInteger(individualProof[0]["challenge"]).add(new BigInteger(individualProof[1]["challenge"]))).mod(this.p)).toString(10))
+            var individualProof = answerData["individualProof"];
             if(this.randomProofs[i]["individual_random"][j] != (new BigInteger(individualProof[0]["challenge"],10).add(new BigInteger(individualProof[1]["challenge"],10))).mod(this.p).toString(10)){
                 return [false,"individual",this.questionList[i]["question"]]
             }
@@ -152,7 +184,8 @@ function checkProofs(){
                 }
             }
         }
-        var overallProof = this.ballot['answerList'][i]["overall_proof"];
+
+        var overallProof = this.ballot[questionId]["overall_proof"];
         if(this.randomProofs[i]["overall_random"] != (new BigInteger(overallProof[0]["challenge"],10).add(new BigInteger(overallProof[1]["challenge"],10))).mod(this.p).toString(10)){
             return [false,"overall",this.questionList[i]["question"]]
         }
@@ -177,11 +210,14 @@ function checkSignature(){
     var signature = this.ballot["signature"]
     this.schnorr = new Schnorr(this.p,this.q,this.g,null);
     var hash = new BigInteger('1',10);
-    for(var i=0;i<this.ballot['answerList'].length;i++){
-        var answers = this.ballot['answerList'][i]['answers'];
-        for(var j=0;j<answers.length;j++){
-            var alpha = new BigInteger(answers[j]["alpha"],10);
-            var beta = new BigInteger(answers[j]["beta"],10);
+    
+    for(var i=0;i<this.questionList.length;i++){
+        var questionId = this.questionList[i]["id"];
+        for(var j=0;j<this.questionList[i]["answers"].length;j++){
+            var answerId = this.questionList[i]["answers"][j]["id"];
+            var answerData = this.ballot[questionId]["answers"][answerId];
+            var alpha = new BigInteger(answerData["alpha"],10);
+            var beta = new BigInteger(answerData["beta"],10);
             hash = hash.multiply(alpha);
             hash = hash.multiply(beta);
         }

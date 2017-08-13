@@ -5,8 +5,8 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
     this.questionList = questionList["questionList"];
     this.currentQuestion = 0;
     this.boothForm = boothForm;
-    this.ballot = {"answerList":[]}
-    this.ballotToSend = {"answerList":[]}
+    this.ballot = {}
+    this.ballotToSend = {}
 
     //<input type="radio" name="castTimeRadioButton" onclick="enableCastTimes()" value="true" checked>Yes
 
@@ -18,7 +18,7 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
             var question = this.questionList[this.currentQuestion];
             htmlCode = "<fieldset><legend><h3>"+question["question"]+"</h3></legend>";
             for(i=0;i<question["answers"].length;i++){
-                htmlCode = htmlCode + "<input type=\"radio\" name=\"answer\" value=\""+i+"\" required>"+question["answers"][i]+"<br>";
+                htmlCode = htmlCode + "<input type=\"radio\" name=\"answer\" value=\""+i+"\" required>"+question["answers"][i]["answer"]+"<br>";
             }
             htmlCode = htmlCode+"<input type=\"submit\" class=\"submitButton\" value=\"Next\"></fieldset>";
             this.boothForm.html(htmlCode);
@@ -86,11 +86,10 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
     }
 
     this.saveAnswer = function(){
-        vote = {"questionId":this.questionList[this.currentQuestion-1]["id"],"answers":[]};
-        answerIndex = $('input:radio[name=answer]:checked').val();
-        vote['answerIndex'] = parseInt(answerIndex);
-        this.ballot["answerList"].push(vote);
-        this.ballotToSend["answerList"].push({"questionId":this.questionList[this.currentQuestion-1]["id"],"answers":[]});
+        var answerIndex = $('input:radio[name=answer]:checked').val();
+        this.ballot[this.questionList[this.currentQuestion-1]["id"]] = {}
+        this.ballotToSend[this.questionList[this.currentQuestion-1]["id"]] = {}
+        this.ballot[this.questionList[this.currentQuestion-1]["id"]]["answer"] = parseInt(answerIndex);
     }
 
     this.encAndSign = function(){
@@ -105,15 +104,17 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
         this.schnorr = new Schnorr(this.p,this.q,this.g,this.secretCredential);
         //console.log(this.schnorr.q.toString(10))
         hash = new BigInteger(1,10);
-        for(var i=0;i<this.ballot['answerList'].length;i++){
-            var questionData = this.ballot['answerList'][i];
-            var answerIndex = questionData['answerIndex'];
+        for(var i=0;i<Object.keys(this.ballot).length;i++){
+            //this.ballot[Object.keys(this.ballot)[i]]["answers"] = 
+            //this.ballotToSend[Object.keys(this.ballot)[i]]["answers"] = []
+            var answerIndex = this.ballot[Object.keys(this.ballot)[i]]["answer"];
             var currentQuestion = this.questionList[i]
             var alpha = new BigInteger('1',10);
             var beta = new BigInteger('1',10);
             var random = new BigInteger('0',10);
+            var encAnswers = {}
             for(var j=0;j<currentQuestion["answers"].length;j++){
-                encAnswers = {};
+                encAnswers[currentQuestion["answers"][j]["id"]] = {}
                 if(j==answerIndex){
                     result = this.elGamal.encrypt(1);
                     var message = 1;
@@ -122,23 +123,27 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
                     var message = 0;
                 }
                 //console.log("Here")
-                encAnswers['alpha'] = result[0].toString(10);
-                encAnswers['beta'] = result[1].toString(10);
-                encAnswers['randomness'] = result[2].toString(10);
-                encAnswers['individualProof'] = this.generateProof(message,result,new BigInteger(currentQuestion['individual_random'][j],10));
-                questionData['answers'].push(encAnswers);
-                var encAnswersClone = Object.assign({}, encAnswers);
-                delete encAnswersClone['randomness'];
-                this.ballotToSend['answerList'][i]['answers'].push(encAnswersClone);
+                encAnswers[currentQuestion["answers"][j]["id"]]['alpha'] = result[0].toString(10);
+                encAnswers[currentQuestion["answers"][j]["id"]]['beta'] = result[1].toString(10);
+                encAnswers[currentQuestion["answers"][j]["id"]]['randomness'] = result[2].toString(10);
+                encAnswers[currentQuestion["answers"][j]["id"]]['individualProof'] = this.generateProof(message,result,new BigInteger(currentQuestion['individual_random'][j],10));
+                //this.ballot[Object.keys(this.ballot)[i]]["answers"].push(encAnswers);
+                //var encAnswersClone = Object.assign({}, encAnswers);
+                //delete encAnswersClone['randomness'];
+                //this.ballotToSend[Object.keys(this.ballot)[i]]["answers"].push(encAnswersClone);
                 hash = hash.multiply(result[0])
                 hash = hash.multiply(result[1])
                 alpha = alpha.multiply(result[0]);
                 beta = beta.multiply(result[1]);
                 random = random.add(result[2]);
             }
+            this.ballot[Object.keys(this.ballot)[i]]["answers"] = encAnswers;
+            var encAnswersClone = Object.assign({}, encAnswers);
+            delete encAnswersClone['randomness'];
+            this.ballotToSend[Object.keys(this.ballot)[i]]["answers"] = encAnswersClone;
             var proof = this.generateProof(1,[alpha,beta,random],new BigInteger(currentQuestion['overall_random'],10))
-            questionData['overall_proof'] = proof;
-            this.ballotToSend['answerList'][i]['overall_proof'] = proof;
+            this.ballot[Object.keys(this.ballot)[i]]["overall_proof"] = proof;
+            this.ballotToSend[Object.keys(this.ballot)[i]]['overall_proof'] = proof;
         }
         hash = hash.mod(this.p);
         this.ballot["signature"] = []

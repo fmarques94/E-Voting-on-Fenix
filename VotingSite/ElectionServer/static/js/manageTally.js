@@ -26,7 +26,7 @@ function saveResults(){
     paperResults[question["question"]] = {};
     var inputs = $('input:text');
     for(var i=0;i<question["answers"].length;i++){
-        paperResults[question["question"]][question["answers"][i]] = inputs[i].value;
+        paperResults[question["question"]][question["answers"][i]["answer"]] = inputs[i].value;
     }
 }
 
@@ -36,7 +36,7 @@ function showNextQuestion(){
         "<p>"+question["question"]+"</p>"+
         "<table>";
     for(var i=0;i<question["answers"].length;i++){
-        htmlCode = htmlCode + "<tr><td>"+question["answers"][i]+"</td>"+
+        htmlCode = htmlCode + "<tr><td>"+question["answers"][i]["answer"]+"</td>"+
             "<td><input type=\"text\" autocomplete=\"off\" pattern=\"[0-9]+\" required></td>";
     }
     htmlCode = htmlCode + "</table><input class=\"button\" type=\"submit\" value=\"Next\">"
@@ -132,29 +132,28 @@ function removePaperVoter(token,currentUrl,redirectUrl,voterId){
 function aggregateEncTally(token,currentUrl,redirectUrl){
     for(var i=0;i<questionList['questionList'].length;i++){
         question = questionList['questionList'][i];
-        aggregatedEncTally[question['question']] = {}
+        aggregatedEncTally[question['id']] = {}
         for(var j=0;j<question["answers"].length;j++){
+            answer = question["answers"][j]
             for(var ballotIndex=0;ballotIndex<ballots.length;ballotIndex++){
-                ballotAnswers = ballots[ballotIndex]['answerList'][i]['answers'][j];
-                console.log(ballotAnswers)
-                if(question["answers"][j] in aggregatedEncTally[question['question']]){
-                    var alpha = aggregatedEncTally[question['question']][question["answers"][j]]["alpha"]
-                    var beta = aggregatedEncTally[question['question']][question["answers"][j]]["beta"]
+                ballotAnswers = ballots[ballotIndex][question["id"]]["answers"][answer["id"]];
+                if(answer["id"] in aggregatedEncTally[question['id']]){
+                    var alpha = aggregatedEncTally[question['id']][answer['id']]["alpha"]
+                    var beta = aggregatedEncTally[question['id']][answer['id']]["beta"]
                     var aux = {
                         "alpha": (alpha.multiply(new BigInteger(ballotAnswers['alpha'],10))).mod(p),
                         "beta": (beta.multiply(new BigInteger(ballotAnswers['beta'],10))).mod(p)
                     }
-                    aggregatedEncTally[question['question']][question["answers"][j]] = aux;
                 }else{
                     var aux = {
                         "alpha": new BigInteger(ballotAnswers['alpha'],10),
                         "beta": new BigInteger(ballotAnswers['beta'],10)
                     }
-                    aggregatedEncTally[question['question']][question["answers"][j]] = aux;
                 }
+                aggregatedEncTally[question['id']][answer['id']] = aux;
             }
-            aggregatedEncTally[question['question']][question["answers"][j]]["alpha"] = aggregatedEncTally[question['question']][question["answers"][j]]["alpha"].toString(10);
-            aggregatedEncTally[question['question']][question["answers"][j]]["beta"] = aggregatedEncTally[question['question']][question["answers"][j]]["beta"].toString(10);
+            aggregatedEncTally[question['id']][answer['id']]["alpha"] = aggregatedEncTally[question['id']][answer['id']]["alpha"].toString(10)
+            aggregatedEncTally[question['id']][answer['id']]["beta"] = aggregatedEncTally[question['id']][answer['id']]["beta"].toString(10)
         }
     }
 }
