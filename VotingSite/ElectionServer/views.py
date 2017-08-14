@@ -597,8 +597,9 @@ def trustee(request,election_id):
                     return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee})
             except Exception as exception:
                 return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
-        elif datetime.datetime.now() > election.endDate:
-            return render(request,'partialDecrypt.html',{'election':election,'trustee':trustee})
+        elif datetime.datetime.now() > election.endDate and election.aggregatedEncTally:
+            p = json.loads(election.cryptoParameters.replace('\'','"'))['p']
+            return render(request,'partialDecrypt.html',{'election':election,'trustee':trustee,'aggregatedEncTally':election.aggregatedEncTally.replace("'",'"'),'p':p})
         else:
             return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee, 'started':True})
 
@@ -755,7 +756,8 @@ def manageTally(request,election_id):
                     ballots.append(json.loads(b.replace('\'','"')))
                 finalEBallots = json.dumps({"ballotList":ballots})
                 p = json.loads(election.cryptoParameters.replace('\'','"'))['p']
-                return render(request,'manageTally.html',{'election':election,'paperVoters':paperVotersIdentifiers,'questions':json.dumps(getQuestionsAux(election)),'finalBallots':finalEBallots,'p':p})
+                trustees = Trustee.objects.filter(election=election)
+                return render(request,'manageTally.html',{'election':election,'paperVoters':paperVotersIdentifiers,'questions':json.dumps(getQuestionsAux(election)),'finalBallots':finalEBallots,'p':p,'trustees':trustees})
             else:
                 return HttpResponseForbidden("Election has not yet ended. Cannot manage paper votes without election ending.")
         else:
@@ -833,6 +835,7 @@ def removePaperVoters(request,election_id):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+@login_required
 def submitPaperResults(request,election_id):
     if request.method == 'POST':
         try:
@@ -870,5 +873,37 @@ def submitPaperResults(request,election_id):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+@login_required
 def submitEncryptedTally(request,election_id):
-    print("Not Implemented")
+    if request.method == 'POST':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        if datetime.datetime.now() <= election.endDate:
+            return HttpResponse(json.dumps({'error':'The election has not ended. Cannot submit encrypted tally.'}),
+             content_type='application/json', status=404)
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            questions = getQuestionsAux(election)
+            for question in questions["questionList"]:
+                if question["id"] not in data.keys():
+                    return HttpResponse(json.dumps({'error':'Encrypted tally not well formed.'}), content_type='application/json', status=500)
+                for answer in question["answers"]:
+                    if answer["id"] not in data[question["id"]].keys():
+                        return HttpResponse(json.dumps({'error':'Encrypted tally not well formed.'}), content_type='application/json', status=500)
+            election.aggregatedEncTally = data
+            election.save()
+            return HttpResponse(json.dumps({
+                'success':True
+                }),content_type='application/json')
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
+    else:
+        return HttpResponseNotAllowed(['POST'])
+
+@login_required
+def submitPartialDecryption(request,election_id):
+    print("NotImplemented!")

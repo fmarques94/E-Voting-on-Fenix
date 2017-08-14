@@ -156,4 +156,26 @@ function aggregateEncTally(token,currentUrl,redirectUrl){
             aggregatedEncTally[question['id']][answer['id']]["beta"] = aggregatedEncTally[question['id']][answer['id']]["beta"].toString(10)
         }
     }
+
+    url = window.location.toString();
+    requestUrl = url.replace(currentUrl, redirectUrl);
+
+    $.ajaxSetup({headers: { "X-CSRFToken": token }});
+    console.log('Seding request now!');
+    $.ajax({
+    type: "POST",
+    url: requestUrl,
+    data: JSON.stringify(aggregatedEncTally),
+    success: function(msg){
+        window.location.reload();},
+    error: function(xhr, ajaxOptions, thrownError){
+        if(xhr){
+            alert('Oops: ' + xhr.responseJSON['error']);
+        }else{
+            alert('Oops: An unexpected error occurred. Please contact the administrators');
+        }
+    },
+    dataType: "json",
+    contentType : "application/json",
+    });
 }

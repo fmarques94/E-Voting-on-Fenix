@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block extra_head_block %}
+<title>Partial Decrypt Election</title>        
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'style/partialDecrypt.css' %}" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="{% static 'js/jsbn.js' %}"></script>
+<script src="{% static 'js/jsbn2.js' %}"></script>
+<script src="{% static 'js/partialDecrypt.js' %}"></script>
+<script>
+    var aggregatedEncTally = JSON.parse("{{aggregatedEncTally|escapejs}}")
+    var p = new BigInteger('{{p}}',10)
+</script>
+{% endblock %}
+
+{% block content %}
+<h2>{{election.name}}</h2>
+{% if trustee.partialDecryption %}
+    <div class="message">
+        <h3>You have already submited your partial decryption. Thank you for participating in the election.</h3>
+    </div>
+{% else %}
+    <form id="partialDecryptForm" action="javascript:partialDecrypt('{{ csrf_token }}','{% url 'trustee' election_id=election.id %}','{% url 'submitPartialDecryption' election_id=election.id %}')">
+        <fieldset>
+            <legend><h2>Secret Key Share</h2></legend>
+            <textarea name="secret" rows="3" style="width:50%" autocomplete="off" required></textarea><br>
+            <input type="submit" class="submitButton" value="Next">
+        </fieldset>
+    </form>
+{% endif %}
+
+{% endblock %}

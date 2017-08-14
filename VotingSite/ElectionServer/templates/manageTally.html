@@ -56,9 +56,33 @@
         </div>
     </div>
 {% elif not election.hybrid and not election.aggregatedEncTally or election.hybrid and not election.aggregatedEncTally and election.paperResults%}
-    <a class="button" href="javascript:aggregateEncTally('{{ csrf_token }}','{% url 'submitEncryptedTally' election_id=election.id %}')">Aggregate encrypted Tally</a>
+    <a class="button" href="javascript:aggregateEncTally('{{ csrf_token }}','{% url 'manageTally' election_id=election.id %}','{% url 'submitEncryptedTally' election_id=election.id %}')">Aggregate encrypted Tally</a>
 {% elif election.aggregatedEncTally and not election.tally and not ready %}
     <p>Please wait until all trustees have made their partial decryptions.</p>
+    <table style="text-align:center;">
+        <tr>
+            <th>
+                Id
+            </th>
+            <th>
+                Partial Decryption Done
+            </th>
+        </tr>
+        {% for trustee in trustees %}
+            {% if trustee.publicKeyShare %}
+            <tr>
+                <td>
+                    {{trustee.identifier}}
+                </td>
+                {% if trustee.partialDecryption %}
+                <td style="color:green;"><b>YES</b></td>
+                {% else %}
+                <td style="color:red;"><b>NO</b></td>
+                {% endif%}
+            </tr>
+            {% endif %}
+        {% endfor %}
+    </table>
 {% elif election.aggregatedEncTally and not election.tally and ready %}
     <a class="button" href="javascript:aggregateEncTally('{{ csrf_token }}','{% url 'submitResults' election_id=election.id %}')">Aggreate and Publish Results</a>
 {% endif %}
