@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block extra_head_block %}
-<title>{% autoescape on %}{{election.name}}{% endautoescape %}</title>        
+<title>Manage Tally</title>        
 {% load static %}
 <link rel="stylesheet" type="text/css" href="{% static 'style/manageTally.css' %}" />
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
@@ -24,6 +24,7 @@
     var gValue = "{{g}}"
     var aggregatedEncTally = JSON.parse("{{election.aggregatedEncTally|escapejs}}".replace(/'/g,'"'));
     var partialDecryptions = JSON.parse("{{partialDecryptions|escapejs}}")["partialDecryptionList"];
+    var numberOfEBallots = {{numberOfEBallots}}
     {% endif %}
 </script>
 {% endblock %}

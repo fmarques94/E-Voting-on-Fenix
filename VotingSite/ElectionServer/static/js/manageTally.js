@@ -197,6 +197,66 @@ function aggregateEncTally(token,currentUrl,redirectUrl){
     });
 }
 
-function publishResults(){
+var lookup;
 
+function publishResults(){
+    var scriptFiles = []
+    var scripts = document.getElementsByClassName("import")
+    for(var i = 0; i<scripts.length;i++){
+        scriptFiles.push(scripts[i].src);
+    }
+
+    var param = {
+        fn:generate_lookup_table,
+        args:[pValue,gValue,numberOfEBallots],
+        importFiles: scriptFiles
+    }
+
+    vkthread.exec(param).then(function(table){
+        lookup = $.extend({}, table);
+        var param = {
+            fn:calculateResults,
+            args:[pValue,questionList,partialDecryptions,aggregatedEncTally,lookup],
+            importFiles:scriptFiles
+        }
+        vkthread.exec(param).then(function(results){
+            console.log(results);
+        });
+    });
+}
+
+function calculateResults(pValue,questionList,partialDecryptions,aggregatedEncTally,table){
+    var results = {}
+    var p = new BigInteger(pValue)
+    for(var i=0;i<questionList['questionList'].length;i++){
+        var question = questionList['questionList'][i];
+        results[question["id"]] = [question["question"],{}]
+        for(var j=0;j<question["answers"].length;j++){
+            var answer = question["answers"][j]
+            var alpha = new BigInteger(1,10)
+            for(var n=0;n<partialDecryptions.length;n++){
+                alpha = alpha.multiply(new BigInteger(partialDecryptions[n][question["id"]][answer["id"]]["alpha"]));
+            }
+            var decryption = (new BigInteger(aggregatedEncTally[question["id"]][answer["id"]]["beta"]).multiply(alpha)).mod(p)
+            results[question["id"]][1][answer["id"]]=[answer["answer"],table[decryption.toString(10)]]
+        }
+    }
+    return results
+}
+
+function generate_lookup_table(pValue,gValue,maxValueOfTable){
+    var p = new BigInteger(pValue,10);
+    var g = new BigInteger(gValue,10);
+    var table=[]
+    var c;
+    for(var i=0;i<=maxValueOfTable;i++){
+        if(i==0){
+            c = new BigInteger('1',10).mod(p).toString(10)
+            table[c] = i
+        }else{
+            c = (new BigInteger(c,10).multiply(g)).mod(p).toString(10)
+            table[c] = i
+        }
+    }
+    return table;
 }

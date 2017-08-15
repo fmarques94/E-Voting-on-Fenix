@@ -750,8 +750,10 @@ def manageTally(request,election_id):
                 paperVotersIdentifiers = paperVoters.values_list('identifier', flat=True)
                 paperVoterCredentials = paperVoters.values_list('publicCredential', flat=True)
                 ballots = []
+                numberOfEBallots = 0
                 for b in Ballot.objects.exclude(publicCredential__in=paperVoterCredentials).values_list('ballot', flat=True):
                     ballots.append(json.loads(b.replace('\'','"')))
+                    numberOfEBallots+=1
                 finalEBallots = json.dumps({"ballotList":ballots})
                 cryptoParameters = json.loads(election.cryptoParameters.replace('\'','"'))
                 trustees = Trustee.objects.filter(election=election)
@@ -770,6 +772,7 @@ def manageTally(request,election_id):
                     'g':cryptoParameters['g'],
                     'trustees':trustees,
                     'partialDecryptions':json.dumps(partialDecryptions),
+                    'numberOfEBallots':numberOfEBallots,
                     'ready':numberOfPartialeDecryptions == len(trustees.values_list('publicKeyShare', flat=True))
                 })
             else:
