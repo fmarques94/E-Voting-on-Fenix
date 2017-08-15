@@ -137,7 +137,8 @@ function aggregateEncTally(token,currentUrl,redirectUrl){
     }
 
     var param = {
-        fn:function(questionList,ballots){
+        fn:function(questionList,ballots,pValue){
+            var p = new BigInteger(pValue,10)
             var aggregatedEncTally = {}
             for(var i=0;i<questionList['questionList'].length;i++){
                 question = questionList['questionList'][i];
@@ -167,7 +168,7 @@ function aggregateEncTally(token,currentUrl,redirectUrl){
             }
             return aggregatedEncTally;
         },
-        args:[questionList,ballots],
+        args:[questionList,ballots,pValue],
         importFiles: scriptFiles
     }
 
@@ -194,4 +195,8 @@ function aggregateEncTally(token,currentUrl,redirectUrl){
         contentType : "application/json",
         });
     });
+}
+
+function publishResults(){
+
 }

@@ -755,9 +755,22 @@ def manageTally(request,election_id):
                 for b in Ballot.objects.exclude(publicCredential__in=paperVoterCredentials).values_list('ballot', flat=True):
                     ballots.append(json.loads(b.replace('\'','"')))
                 finalEBallots = json.dumps({"ballotList":ballots})
-                p = json.loads(election.cryptoParameters.replace('\'','"'))['p']
+                cryptoParameters = json.loads(election.cryptoParameters.replace('\'','"'))
                 trustees = Trustee.objects.filter(election=election)
-                return render(request,'manageTally.html',{'election':election,'paperVoters':paperVotersIdentifiers,'questions':json.dumps(getQuestionsAux(election)),'finalBallots':finalEBallots,'p':p,'trustees':trustees})
+                partialDecryptions = {"partialDecryptionList":[]}
+                for partial in trustees.values_list('partialDecryption', flat=True):
+                    partialDecryptions["partialDecryptionList"].append(json.loads(partial.replace('\'','"')))
+                return render(request,'manageTally.html',{
+                    'election':election,
+                    'paperVoters':paperVotersIdentifiers,
+                    'questions':json.dumps(getQuestionsAux(election)),
+                    'finalBallots':finalEBallots,
+                    'p':cryptoParameters['p'],
+                    'g':cryptoParameters['g'],
+                    'trustees':trustees,
+                    'partialDecryptions':json.dumps(partialDecryptions),
+                    'ready':len(trustees.values_list('partialDecryption', flat=True)) == len(trustees.values_list('publicKeyShare', flat=True))
+                })
             else:
                 return HttpResponseForbidden("Election has not yet ended. Cannot manage paper votes without election ending.")
         else:
@@ -906,4 +919,65 @@ def submitEncryptedTally(request,election_id):
 
 @login_required
 def submitPartialDecryption(request,election_id):
-    print("NotImplemented!")
+    if request.method == 'POST':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        try:
+            trustee = Trustee.objects.get(election=election,identifier=request.user)
+        except Trustee.DoesNotExist:
+            return HttpResponseForbidden("Access denied")
+        if datetime.datetime.now() <= election.endDate:
+            return HttpResponse(json.dumps({'error':'The election has not ended. Cannot submit partial decryption.'}),
+             content_type='application/json', status=404)
+        if not trustee.publicKeyShare:
+            return HttpResponse(json.dumps({'error':'Trustee didn\'t participate in the protocol'}), content_type='application/json', status=500)
+        data = json.loads(request.body.decode('utf-8'))
+        questions = getQuestionsAux(election)
+        for question in questions["questionList"]:
+            if question["id"] not in data.keys():
+                return HttpResponse(json.dumps({'error':'Partial Decryption not well formed.'}), content_type='application/json', status=500)
+            for answer in question["answers"]:
+                if answer["id"] not in data[question["id"]].keys():
+                    return HttpResponse(json.dumps({'error':'Partial Decryption not well formed.'}), content_type='application/json', status=500)
+        try:
+            trustee.partialDecryption = data
+            trustee.save()
+            return HttpResponse(json.dumps({
+                'success':True
+                }),content_type='application/json')
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
+    else:
+        return HttpResponseNotAllowed(['POST'])
+
+@login_required
+def publishResults(request,election_id):
+    if request.method == 'POST':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        if datetime.datetime.now() <= election.endDate:
+            return HttpResponse(json.dumps({'error':'The election has not ended. Cannot submit election tally.'}),content_type='application/json', status=404)
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            questions = getQuestionsAux(election)
+            for question in questions["questionList"]:
+                if question["id"] not in data.keys():
+                    return HttpResponse(json.dumps({'error':'Results not well formed.'}), content_type='application/json', status=500)
+                for answer in question["answers"]:
+                    if answer["id"] not in data[question["id"]].keys():
+                        return HttpResponse(json.dumps({'error':'Results not well formed.'}), content_type='application/json', status=500)
+            election.tally = data
+            election.save()
+            return HttpResponse(json.dumps({
+                'success':True
+                }),content_type='application/json')
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
+    else:
+        return HttpResponseNotAllowed(['POST'])

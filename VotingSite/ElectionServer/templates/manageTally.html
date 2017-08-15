@@ -18,7 +18,12 @@
     {% elif not election.hybrid and not election.aggregatedEncTally or election.hybrid and not election.aggregatedEncTally and election.paperResults %}
     console.log("Here")
     var ballots = JSON.parse("{{finalBallots|escapejs}}")['ballotList'];
-    var p = new BigInteger("{{p}}",10)
+    var pValue = "{{p}}"
+    {% elif election.aggregatedEncTally and partialDecryptions %}
+    var pValue = "{{p}}"
+    var gValue = "{{g}}"
+    var aggregatedEncTally = JSON.parse("{{election.aggregatedEncTally|escapejs}}".replace(/'/g,'"'));
+    var partialDecryptions = JSON.parse("{{partialDecryptions|escapejs}}")["partialDecryptionList"];
     {% endif %}
 </script>
 {% endblock %}
@@ -85,7 +90,7 @@
         {% endfor %}
     </table>
 {% elif election.aggregatedEncTally and not election.tally and ready %}
-    <a class="button" href="javascript:aggregateEncTally('{{ csrf_token }}','{% url 'submitResults' election_id=election.id %}')">Aggreate and Publish Results</a>
+    <a class="button" href="javascript:publishResults('{{ csrf_token }}','{% url 'manageTally' election_id=election.id %}','{% url 'publishResults' election_id=election.id %}')">Aggreate and Publish Results</a>
 {% endif %}
 </div>
 {% endblock %}
