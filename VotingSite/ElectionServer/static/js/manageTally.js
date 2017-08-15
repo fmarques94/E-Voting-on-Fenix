@@ -1,6 +1,5 @@
 var currentQuestion=0;
 var paperResults = {}
-var aggregatedEncTally = {}
 
 function addPaperResuls(){
     $('.manageTallyContent').html(
@@ -130,52 +129,69 @@ function removePaperVoter(token,currentUrl,redirectUrl,voterId){
 }
 
 function aggregateEncTally(token,currentUrl,redirectUrl){
-    for(var i=0;i<questionList['questionList'].length;i++){
-        question = questionList['questionList'][i];
-        aggregatedEncTally[question['id']] = {}
-        for(var j=0;j<question["answers"].length;j++){
-            answer = question["answers"][j]
-            for(var ballotIndex=0;ballotIndex<ballots.length;ballotIndex++){
-                ballotAnswers = ballots[ballotIndex][question["id"]]["answers"][answer["id"]];
-                if(answer["id"] in aggregatedEncTally[question['id']]){
-                    var alpha = aggregatedEncTally[question['id']][answer['id']]["alpha"]
-                    var beta = aggregatedEncTally[question['id']][answer['id']]["beta"]
-                    var aux = {
-                        "alpha": (alpha.multiply(new BigInteger(ballotAnswers['alpha'],10))).mod(p),
-                        "beta": (beta.multiply(new BigInteger(ballotAnswers['beta'],10))).mod(p)
-                    }
-                }else{
-                    var aux = {
-                        "alpha": new BigInteger(ballotAnswers['alpha'],10),
-                        "beta": new BigInteger(ballotAnswers['beta'],10)
-                    }
-                }
-                aggregatedEncTally[question['id']][answer['id']] = aux;
-            }
-            aggregatedEncTally[question['id']][answer['id']]["alpha"] = aggregatedEncTally[question['id']][answer['id']]["alpha"].toString(10)
-            aggregatedEncTally[question['id']][answer['id']]["beta"] = aggregatedEncTally[question['id']][answer['id']]["beta"].toString(10)
-        }
+
+    var scriptFiles = []
+    var scripts = document.getElementsByClassName("import")
+    for(var i = 0; i<scripts.length;i++){
+        scriptFiles.push(scripts[i].src);
     }
 
-    url = window.location.toString();
-    requestUrl = url.replace(currentUrl, redirectUrl);
+    var param = {
+        fn:function(questionList,ballots){
+            var aggregatedEncTally = {}
+            for(var i=0;i<questionList['questionList'].length;i++){
+                question = questionList['questionList'][i];
+                aggregatedEncTally[question['id']] = {}
+                for(var j=0;j<question["answers"].length;j++){
+                    answer = question["answers"][j]
+                    for(var ballotIndex=0;ballotIndex<ballots.length;ballotIndex++){
+                        ballotAnswers = ballots[ballotIndex][question["id"]]["answers"][answer["id"]];
+                        if(answer["id"] in aggregatedEncTally[question['id']]){
+                            var alpha = aggregatedEncTally[question['id']][answer['id']]["alpha"]
+                            var beta = aggregatedEncTally[question['id']][answer['id']]["beta"]
+                            var aux = {
+                                "alpha": (alpha.multiply(new BigInteger(ballotAnswers['alpha'],10))).mod(p),
+                                "beta": (beta.multiply(new BigInteger(ballotAnswers['beta'],10))).mod(p)
+                            }
+                        }else{
+                            var aux = {
+                                "alpha": new BigInteger(ballotAnswers['alpha'],10),
+                                "beta": new BigInteger(ballotAnswers['beta'],10)
+                            }
+                        }
+                        aggregatedEncTally[question['id']][answer['id']] = aux;
+                    }
+                    aggregatedEncTally[question['id']][answer['id']]["alpha"] = aggregatedEncTally[question['id']][answer['id']]["alpha"].toString(10)
+                    aggregatedEncTally[question['id']][answer['id']]["beta"] = aggregatedEncTally[question['id']][answer['id']]["beta"].toString(10)
+                }
+            }
+            return aggregatedEncTally;
+        },
+        args:[questionList,ballots],
+        importFiles: scriptFiles
+    }
 
-    $.ajaxSetup({headers: { "X-CSRFToken": token }});
-    console.log('Seding request now!');
-    $.ajax({
-    type: "POST",
-    url: requestUrl,
-    data: JSON.stringify(aggregatedEncTally),
-    success: function(msg){
-        window.location.reload();},
-    error: function(xhr, ajaxOptions, thrownError){
-        if(xhr){
-            alert('Oops: ' + xhr.responseJSON['error']);
-        }else{
-            alert('Oops: An unexpected error occurred. Please contact the administrators');
-        }
-    },
-    dataType: "json",
-    contentType : "application/json",
+    vkthread.exec(param).then(function(data){
+        url = window.location.toString();
+        requestUrl = url.replace(currentUrl, redirectUrl);
+
+        $.ajaxSetup({headers: { "X-CSRFToken": token }});
+        console.log('Seding request now!');
+        $.ajax({
+        type: "POST",
+        url: requestUrl,
+        data: JSON.stringify(data),
+        success: function(msg){
+            window.location.reload();},
+        error: function(xhr, ajaxOptions, thrownError){
+            if(xhr){
+                alert('Oops: ' + xhr.responseJSON['error']);
+            }else{
+                alert('Oops: An unexpected error occurred. Please contact the administrators');
+            }
+        },
+        dataType: "json",
+        contentType : "application/json",
+        });
     });
 }

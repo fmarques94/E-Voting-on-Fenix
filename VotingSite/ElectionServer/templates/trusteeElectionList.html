@@ -40,7 +40,7 @@
                         <td>
                             <strong>Booth Times:</strong>
                         </td>
-                        {% if election.openCastTime %}
+                        {% if trusteeObject.election.openCastTime %}
                         <td>
                             {{trusteeObject.election.openCastTime|time:"H:i"}} until {{trusteeObject.election.closeCastTime|date:"H:i"}}
                         </td>

@@ -5,12 +5,13 @@
 {% load static %}
 <link rel="stylesheet" type="text/css" href="{% static 'style/partialDecrypt.css' %}" />
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-<script src="{% static 'js/jsbn.js' %}"></script>
-<script src="{% static 'js/jsbn2.js' %}"></script>
+<script src="{% static 'js/vkthread/vkthread.min.js' %}"></script>
+<script class="import" src="{% static 'js/jsbn.js' %}"></script>
+<script class="import" src="{% static 'js/jsbn2.js' %}"></script>
 <script src="{% static 'js/partialDecrypt.js' %}"></script>
 <script>
     var aggregatedEncTally = JSON.parse("{{aggregatedEncTally|escapejs}}")
-    var p = new BigInteger('{{p}}',10)
+    var pValue = '{{p}}'
 </script>
 {% endblock %}
 

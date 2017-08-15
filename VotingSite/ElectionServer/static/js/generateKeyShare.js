@@ -1,71 +1,73 @@
 function generateKeyShare(cryptoParam,random,token){
-
-    p = new BigInteger(cryptoParam['p'],10);
-    g = new BigInteger(cryptoParam['g'],10);
-
-
-    elgamal = new ElGamal(
-        p,
-        g,
-        null
-    );
-
-    keys = elgamal.generate_key();
+    var scriptFiles = []
+    var scripts = document.getElementsByClassName("import")
+    for(var i = 0; i<scripts.length;i++){
+        scriptFiles.push(scripts[i].src);
+    }
+    var param = {
+        fn:function(cryptoParam,random){
+            var p = new BigInteger(cryptoParam['p'],10);
+            var g = new BigInteger(cryptoParam['g'],10);
 
 
-    payload = {"pk":keys[0]}
+            var elgamal = new ElGamal(
+                p,
+                g,
+                null
+            );
 
-    x = new BigInteger(keys[1],16);
-    h = new BigInteger(keys[0],10);
-    e = new BigInteger(random,10);
+            var keys = elgamal.generate_key();
 
-    /*Calculate proof*/
+            x = new BigInteger(keys[1],16);
+            h = new BigInteger(keys[0],10);
+            e = new BigInteger(random,10);
 
-    k = elgamal.generateNumberBelowP(p);
-    r = g.modPow(k,p)
-    s = k.add(x.multiply(e))
+            /*Calculate proof*/
 
-    //Isto é para mover para a zona de verificação da prova.
-    //aux = (
-    //    g.modPow(s,p).multiply(
-    //        (h.modPow(p.subtract(new BigInteger('2',10)),p)).modPow(e,p)
-    //    )
-    //).mod(p)
+            k = elgamal.generateNumberBelowP(p);
+            r = g.modPow(k,p)
+            s = k.add(x.multiply(e))
 
-    //console.log(aux.toString(10)==r.toString(10))
-
-    payload = {
-        "pk": h.toString(16),
-        "proof":{
-            "r": r.toString(10),
-            "s": s.toString(10)
-        }
+            return [h.toString(16),keys[1],r.toString(10),s.toString(10)]
+        },
+        args:[cryptoParam,random],
+        importFiles: scriptFiles
     }
 
-    $.ajaxSetup({headers: { "X-CSRFToken": token }});
-    console.log('Seding request now!');
-    $.ajax({
-    type: "POST",
-    url: window.location.toString(),
-    data: JSON.stringify(payload),
-    success: function(msg){
-           $('#generateKeyShareButton').remove();
-           $('#keyShare').addClass("message");
-           $('.message').append(
-               "<p>Your private key share is:</p>"+
-               "<p>"+keys[1]+"</p>"+
-               "<p><b>Please save this key until the end of the election process</b></p>"
-           );
-    },
-    error: function(xhr, ajaxOptions, thrownError){
-        if(xhr){
-            alert('Oops: ' + xhr.responseJSON['error']);
-        }else{
-            alert('Oops: An unexpected error occurred. Please contact the administrators');
+    vkthread.exec(param).then(function(data){
+        payload = {
+            "pk": data[0],
+            "proof":{
+                "r": data[2],
+                "s": data[3]
+            }
         }
-    },
-    dataType: "json",
-    contentType : "application/json",
+
+        $.ajaxSetup({headers: { "X-CSRFToken": token }});
+        console.log('Seding request now!');
+        $.ajax({
+        type: "POST",
+        url: window.location.toString(),
+        data: JSON.stringify(payload),
+        success: function(msg){
+            $('#generateKeyShareButton').remove();
+            $('#keyShare').addClass("message");
+            $('.message').append(
+                "<p>Your private key share is:</p>"+
+                "<p>"+data[1]+"</p>"+
+                "<p><b>Please save this key until the end of the election process</b></p>"
+            );
+        },
+        error: function(xhr, ajaxOptions, thrownError){
+            if(xhr){
+                alert('Oops: ' + xhr.responseJSON['error']);
+            }else{
+                alert('Oops: An unexpected error occurred. Please contact the administrators');
+            }
+        },
+        dataType: "json",
+        contentType : "application/json",
+        });
     });
 
 }
