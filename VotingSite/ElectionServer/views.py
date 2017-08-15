@@ -404,7 +404,7 @@ def cast(request,election_id):
             return HttpResponse(json.dumps({'error':'The election has ended'}),
             content_type='application/json', status=404)
         if election.openCastTime!=None and election.closeCastTime!=None:
-            if datetime.datetime.now().time() <= election.openCastTime and datetime.datetime.now().time() >= election.closeCastTime:
+            if datetime.datetime.now().time() <= election.openCastTime or datetime.datetime.now().time() >= election.closeCastTime:
                 return HttpResponse(json.dumps({'error':'The ballot box is closed between ' + election.openCastTime + ' and '
                 + election.closeCastTime}),
              content_type='application/json', status=404)
@@ -449,7 +449,7 @@ def cast(request,election_id):
                         totalAlpha = totalAlpha * alpha
                         totalBeta = totalBeta * beta
                         signMessage = signMessage*alpha*beta
-                        random = int(randoms['randomLists'][i]['individual_random'][j])
+                        random = int(randoms[question["id"]][answer["id"]])
                         if random == (int(answerData['individualProof'][0]['challenge']) + int(answerData['individualProof'][1]['challenge']))%p:
                             proof0 = testProof(int(answerData['individualProof'][0]['challenge']),int(answerData['individualProof'][0]['response']),g,h,p,alpha,beta,0)
                             proof1 = testProof(int(answerData['individualProof'][1]['challenge']),int(answerData['individualProof'][1]['response']),g,h,p,alpha,beta,1)
@@ -459,7 +459,7 @@ def cast(request,election_id):
                                 return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
                         else:
                             return HttpResponse(json.dumps({'error':'Proof verification failed.'}), content_type='application/json', status=500)
-                    random = int(randoms['randomLists'][i]['overall_random'])
+                    random = int(randoms[question["id"]]["overall"])
                     if random == (int(questionData['overall_proof'][0]['challenge']) + int(questionData['overall_proof'][1]['challenge']))%p:
                         proof0 = testProof(int(questionData['overall_proof'][0]['challenge']),int(questionData['overall_proof'][0]['response']),g,h,p,totalAlpha,totalBeta,0)
                         proof1 = testProof(int(questionData['overall_proof'][1]['challenge']),int(questionData['overall_proof'][1]['response']),g,h,p,totalAlpha,totalBeta,1)
@@ -490,25 +490,23 @@ def cast(request,election_id):
             if datetime.datetime.now() >= election.endDate:
                 return render(request,"closedBallotBox.html",{'election':election})
             if election.openCastTime!=None and election.closeCastTime!=None:
-                return render(request,"closedBallotBox.html",{'election':election})
+                if datetime.datetime.now().time() <= election.openCastTime or datetime.datetime.now().time() >= election.closeCastTime:
+                    return render(request,"closedBallotBox.html",{'election':election})
             try:
                 ballot = Ballot.objects.get(election=election,publicCredential=voter.publicCredential)
                 return render(request,"closedBallotBox.html",{'election':election})
             except Ballot.DoesNotExist:
                 cryptoParameters = json.loads(election.cryptoParameters.replace('\'','"'))
                 questions = getQuestionsAux(election)
-                randoms = {"randomLists":[]}
+                randoms = {}
                 for question in questions["questionList"]:
-                    overall_random_aux = str(secrets.randbelow(int(cryptoParameters['p'])))
-                    question["overall_random"] = overall_random_aux
-                    question["individual_random"] = []
+                    randoms[question["id"]] = {}
+                    randoms[question["id"]]["overall"] = str(secrets.randbelow(int(cryptoParameters['p'])))
                     for answer in question["answers"]:
-                        individual_random_aux = str(secrets.randbelow(int(cryptoParameters['p'])))
-                        question["individual_random"].append(individual_random_aux)
-                    randoms["randomLists"].append({"overall_random":overall_random_aux,"individual_random":question["individual_random"]})
+                        randoms[question["id"]][answer["id"]] = str(secrets.randbelow(int(cryptoParameters['p'])))
                 voter.proofRandomValues = json.dumps(randoms)
                 voter.save()
-                return render(request,"ballotBox.html",{'election':election,'questions':json.dumps(questions)})
+                return render(request,"ballotBox.html",{'election':election,'questions':json.dumps(questions),'randoms':json.dumps(randoms)})
         else:
             if datetime.datetime.now() >= election.endDate:
                 return render(request,"closedBallotBox.html",{'election':election})
@@ -758,8 +756,11 @@ def manageTally(request,election_id):
                 cryptoParameters = json.loads(election.cryptoParameters.replace('\'','"'))
                 trustees = Trustee.objects.filter(election=election)
                 partialDecryptions = {"partialDecryptionList":[]}
+                numberOfPartialeDecryptions = 0
                 for partial in trustees.values_list('partialDecryption', flat=True):
-                    partialDecryptions["partialDecryptionList"].append(json.loads(partial.replace('\'','"')))
+                    if partial:
+                        partialDecryptions["partialDecryptionList"].append(json.loads(partial.replace('\'','"')))
+                        numberOfPartialeDecryptions+=1
                 return render(request,'manageTally.html',{
                     'election':election,
                     'paperVoters':paperVotersIdentifiers,
@@ -769,7 +770,7 @@ def manageTally(request,election_id):
                     'g':cryptoParameters['g'],
                     'trustees':trustees,
                     'partialDecryptions':json.dumps(partialDecryptions),
-                    'ready':len(trustees.values_list('partialDecryption', flat=True)) == len(trustees.values_list('publicKeyShare', flat=True))
+                    'ready':numberOfPartialeDecryptions == len(trustees.values_list('publicKeyShare', flat=True))
                 })
             else:
                 return HttpResponseForbidden("Election has not yet ended. Cannot manage paper votes without election ending.")
@@ -864,10 +865,10 @@ def submitPaperResults(request,election_id):
             data = json.loads(request.body.decode('utf-8'))
             questions = getQuestionsAux(election)
             for i,question in enumerate(questions['questionList']):
-                if question['question'] not in data.keys():
+                if question['id'] not in data.keys():
                     return HttpResponse(json.dumps({'error':'Incomplete Results.'}), content_type='application/json', status=500)
                 for answer in questions['questionList'][i]['answers']:
-                    if answer["answer"] not in data[question['question']].keys():
+                    if answer["id"] not in data[question['id']].keys():
                         return HttpResponse(json.dumps({'error':'Incomplete Results.'}), content_type='application/json', status=500)
             numberOfPaperVoters = len(Voter.objects.filter(election=election,paperVoter=True))
             for question in data:
@@ -897,6 +898,9 @@ def submitEncryptedTally(request,election_id):
             return HttpResponseForbidden("Access denied")
         if datetime.datetime.now() <= election.endDate:
             return HttpResponse(json.dumps({'error':'The election has not ended. Cannot submit encrypted tally.'}),
+             content_type='application/json', status=404)
+        if election.hybrid and not election.paperResults:
+            return HttpResponse(json.dumps({'error':'First the paper results must be submitted.'}),
              content_type='application/json', status=404)
         try:
             data = json.loads(request.body.decode('utf-8'))
@@ -933,6 +937,8 @@ def submitPartialDecryption(request,election_id):
              content_type='application/json', status=404)
         if not trustee.publicKeyShare:
             return HttpResponse(json.dumps({'error':'Trustee didn\'t participate in the protocol'}), content_type='application/json', status=500)
+        if not election.aggregatedEncTally:
+            return HttpResponse(json.dumps({'error':'Trustee cannot submit decryption without aggregated tally'}), content_type='application/json', status=500)
         data = json.loads(request.body.decode('utf-8'))
         questions = getQuestionsAux(election)
         for question in questions["questionList"]:

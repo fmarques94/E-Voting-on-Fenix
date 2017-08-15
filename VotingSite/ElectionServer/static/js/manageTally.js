@@ -22,10 +22,10 @@ function nextQuestion(){
 
 function saveResults(){
     var question = questionList['questionList'][currentQuestion];
-    paperResults[question["question"]] = {};
+    paperResults[question["id"]] = {};
     var inputs = $('input:text');
     for(var i=0;i<question["answers"].length;i++){
-        paperResults[question["question"]][question["answers"][i]["answer"]] = inputs[i].value;
+        paperResults[question["id"]][question["answers"][i]["id"]] = inputs[i].value;
     }
 }
 

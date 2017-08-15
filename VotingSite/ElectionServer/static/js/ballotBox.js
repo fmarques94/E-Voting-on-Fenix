@@ -16,7 +16,7 @@ function getCredentials(){
 
     //test(window.crypto.getRandomValues);
 
-    BOOTH = new Booth(pk,cryptoParameters,credentials,questionList,$('#ballotBoxForm'))
+    BOOTH = new Booth(pk,cryptoParameters,credentials,questionList,$('#ballotBoxForm'),randoms)
     $('#ballotBoxForm').attr("action","javascript:BOOTH.nextQuestion();")
     BOOTH.nextQuestion();
 

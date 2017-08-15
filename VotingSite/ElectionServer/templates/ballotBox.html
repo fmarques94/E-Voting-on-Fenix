@@ -19,6 +19,7 @@
     var pk = "{{election.publicKey|escapejs}}";
     var token = '{{ csrf_token }}';
     var auditor = "{% url 'auditBallot' election_id=election.id %}"
+    var randoms = JSON.parse("{{randoms|escapejs}}");
 </script>
 
 {% endblock %}

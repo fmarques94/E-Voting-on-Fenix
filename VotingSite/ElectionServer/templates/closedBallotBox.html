@@ -12,7 +12,7 @@
 <p>The ballot box for this election is open between the date of {{election.startDate|date:"Y-m-d, H:i"}} and {{election.endDate|date:"Y-m-d, H:i"}}</p>
 
 {% if election.openCastTime %}
-<p>During those dates it will be open between {{election.openCastTime|time:"H:i"}} and {{election.openCastTime|time:"H:i"}}</p>
+<p>During those dates it will be open between {{election.openCastTime|time:"H:i"}} and {{election.closeCastTime|time:"H:i"}}</p>
 {% endif %}
 
 {% endblock %}

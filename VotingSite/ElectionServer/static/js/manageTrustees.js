@@ -94,7 +94,7 @@ function aggregateKey(token,keyShares,cryptoParameters,currentUrl,redirectUrl){
                     )
                 ).mod(p)
 
-                if(aux.toString(10)==share['proof']['r']){
+                if(aux.compareTo(new BigInteger(share['proof']['r'],10))==0){
                     electionPublicKey = electionPublicKey.multiply(h);
                 }else{ 
                     return [false,Object.keys(keyShares)[i]];

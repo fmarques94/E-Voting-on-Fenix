@@ -3,7 +3,7 @@ function auditorVariable(electionPublicKey,cryptoParameters,ballot,questionList,
     this.cryptoParameters = cryptoParameters;
     this.ballot = ballot;
     this.questionList = questionList["questionList"];
-    this.randomProofs = randoms['randomLists'];
+    this.randoms = randoms;
     this.scriptFiles = scriptFiles;
 }
 
@@ -171,7 +171,8 @@ function checkProofs(){
             totalAlpha = totalAlpha.multiply(alpha)
             totalBeta = totalBeta.multiply(beta)
             var individualProof = answerData["individualProof"];
-            if(this.randomProofs[i]["individual_random"][j] != (new BigInteger(individualProof[0]["challenge"],10).add(new BigInteger(individualProof[1]["challenge"],10))).mod(this.p).toString(10)){
+            var individual_random = this.randoms[questionId][answerId];
+            if(new BigInteger(individual_random,10).compareTo((new BigInteger(individualProof[0]["challenge"],10).add(new BigInteger(individualProof[1]["challenge"],10))).mod(this.p))!=0){
                 return [false,"individual",this.questionList[i]["question"]]
             }
             for(var n=0;n<individualProof.length;n++){
@@ -186,7 +187,8 @@ function checkProofs(){
         }
 
         var overallProof = this.ballot[questionId]["overall_proof"];
-        if(this.randomProofs[i]["overall_random"] != (new BigInteger(overallProof[0]["challenge"],10).add(new BigInteger(overallProof[1]["challenge"],10))).mod(this.p).toString(10)){
+        var overall_random = this.randoms[questionId]["overall"];
+        if(new BigInteger(overall_random,10).compareTo((new BigInteger(overallProof[0]["challenge"],10).add(new BigInteger(overallProof[1]["challenge"],10))).mod(this.p))!=0){
             return [false,"overall",this.questionList[i]["question"]]
         }
         for(var n=0;n<overallProof.length;n++){

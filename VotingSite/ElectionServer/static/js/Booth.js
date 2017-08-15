@@ -1,4 +1,4 @@
-function Booth(electionPublicKey,cryptoParameters,credentials,questionList,boothForm){
+function Booth(electionPublicKey,cryptoParameters,credentials,questionList,boothForm,randoms){
     this.pk = electionPublicKey;
     this.cryptoParameters = cryptoParameters;
     this.credentials = credentials;
@@ -7,6 +7,7 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
     this.boothForm = boothForm;
     this.ballot = {}
     this.ballotToSend = {}
+    this.randoms = randoms
 
     //<input type="radio" name="castTimeRadioButton" onclick="enableCastTimes()" value="true" checked>Yes
 
@@ -100,13 +101,9 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
         this.secretCredential = new BigInteger(this.credentials["secret"],10);
         this.publicCredential = new BigInteger(this.credentials["public"],10);
         this.elGamal = new ElGamal(this.p,this.g,this.electionPublicKey);
-        //console.log(this.q.toString(10))
         this.schnorr = new Schnorr(this.p,this.q,this.g,this.secretCredential);
-        //console.log(this.schnorr.q.toString(10))
         hash = new BigInteger(1,10);
         for(var i=0;i<Object.keys(this.ballot).length;i++){
-            //this.ballot[Object.keys(this.ballot)[i]]["answers"] = 
-            //this.ballotToSend[Object.keys(this.ballot)[i]]["answers"] = []
             var answerIndex = this.ballot[Object.keys(this.ballot)[i]]["answer"];
             var currentQuestion = this.questionList[i]
             var alpha = new BigInteger('1',10);
@@ -122,15 +119,11 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
                     result = this.elGamal.encrypt(0);
                     var message = 0;
                 }
-                //console.log("Here")
                 encAnswers[currentQuestion["answers"][j]["id"]]['alpha'] = result[0].toString(10);
                 encAnswers[currentQuestion["answers"][j]["id"]]['beta'] = result[1].toString(10);
                 encAnswers[currentQuestion["answers"][j]["id"]]['randomness'] = result[2].toString(10);
-                encAnswers[currentQuestion["answers"][j]["id"]]['individualProof'] = this.generateProof(message,result,new BigInteger(currentQuestion['individual_random'][j],10));
-                //this.ballot[Object.keys(this.ballot)[i]]["answers"].push(encAnswers);
-                //var encAnswersClone = Object.assign({}, encAnswers);
-                //delete encAnswersClone['randomness'];
-                //this.ballotToSend[Object.keys(this.ballot)[i]]["answers"].push(encAnswersClone);
+                var randomNumber = new BigInteger(this.randoms[currentQuestion["id"]][currentQuestion["answers"][j]["id"]],10)
+                encAnswers[currentQuestion["answers"][j]["id"]]['individualProof'] = this.generateProof(message,result,randomNumber);
                 hash = hash.multiply(result[0])
                 hash = hash.multiply(result[1])
                 alpha = alpha.multiply(result[0]);
@@ -141,7 +134,8 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
             var encAnswersClone = Object.assign({}, encAnswers);
             delete encAnswersClone['randomness'];
             this.ballotToSend[Object.keys(this.ballot)[i]]["answers"] = encAnswersClone;
-            var proof = this.generateProof(1,[alpha,beta,random],new BigInteger(currentQuestion['overall_random'],10))
+            var overall_random = new BigInteger(this.randoms[currentQuestion["id"]]["overall"],10)
+            var proof = this.generateProof(1,[alpha,beta,random],overall_random)
             this.ballot[Object.keys(this.ballot)[i]]["overall_proof"] = proof;
             this.ballotToSend[Object.keys(this.ballot)[i]]['overall_proof'] = proof;
         }
