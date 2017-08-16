@@ -108,12 +108,12 @@ def addTrustees(request,election_id):
             data = json.loads(request.body.decode('utf-8'))
             with transaction.atomic():
                 for trusteeData in data['trusteeList']:
-                    trustee = Trustee()
-                    trustee.election = election
-                    trustee.identifier = trusteeData['id']
-                    trustee.name = trusteeData['name']
-                    trustee.email = trusteeData['email']
-                    trustee.save()
+                    t = Trustee()
+                    t.election = election
+                    t.identifier = trusteeData['id']
+                    t.name = trusteeData['name']
+                    t.email = trusteeData['email']
+                    t.save()
             return HttpResponse(json.dumps({'success':True}),content_type='application/json') 
         except Election.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
@@ -546,11 +546,11 @@ def manageTrustees(request,election_id):
         if request.user != election.admin:
             return HttpResponseForbidden("Access denied")
         keyshares = {}
-        for trustee in Trustee.objects.filter(election=election):
-            if trustee.publicKeyShare:
-                if 'pk' in json.loads(trustee.publicKeyShare.replace('\'','"')):
-                    keyshares[trustee.identifier] = json.loads(trustee.publicKeyShare.replace('\'','"'))
-                    keyshares[trustee.identifier]["proof"]["e"] = trustee.keyShareProofRandom
+        for t in Trustee.objects.filter(election=election):
+            if t.publicKeyShare:
+                if 'pk' in json.loads(t.publicKeyShare.replace('\'','"')):
+                    keyshares[t.identifier] = json.loads(t.publicKeyShare.replace('\'','"'))
+                    keyshares[t.identifier]["proof"]["e"] = t.keyShareProofRandom
         return render(request,'manageTrustees.html',{'election':election,'keyShares': keyshares})
     else:
         return HttpResponseNotAllowed(['GET'])
@@ -584,33 +584,51 @@ def manageQuestions(request,election_id):
 @login_required
 def trustee(request,election_id):
 
-    def getMethodTrustee(election,trustee):
+    def getMethodTrustee(election,t):
         if datetime.datetime.now() < election.startDate:
             try:
-                if not trustee.keyShareProofRandom:
-                    trustee.keyShareProofRandom = str(secrets.randbelow(int(ast.literal_eval(election.cryptoParameters)['p'])))
-                    trustee.save()
-                    return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee})
+                if not t.keyShareProofRandom:
+                    t.keyShareProofRandom = str(secrets.randbelow(int(ast.literal_eval(election.cryptoParameters)['p'])))
+                    t.save()
+                    return render(request,'generateKeyShare.html',{'election':election,'trustee':t})
                 else:
-                    return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee})
+                    return render(request,'generateKeyShare.html',{'election':election,'trustee':t})
             except Exception as exception:
                 return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
         elif datetime.datetime.now() > election.endDate and election.aggregatedEncTally:
-            p = json.loads(election.cryptoParameters.replace('\'','"'))['p']
-            return render(request,'partialDecrypt.html',{'election':election,'trustee':trustee,'aggregatedEncTally':election.aggregatedEncTally.replace("'",'"'),'p':p})
+            cryptoParams = json.loads(election.cryptoParameters.replace('\'','"'))
+            questions = getQuestionsAux(election)
+            if not t.partialDecryption:
+                randoms = {}
+                for question in questions["questionList"]:
+                    randoms[question["id"]] = {}
+                    for answer in question["answers"]:
+                        randoms[question["id"]][answer["id"]] = str(secrets.randbelow(int(cryptoParams['p'])))
+                try:
+                    t.decryptionProofRandom = json.dumps(randoms)
+                    t.save()
+                except:
+                    return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
+            return render(request,'partialDecrypt.html',{
+                'election':election,
+                'trustee':t,
+                'aggregatedEncTally':election.aggregatedEncTally.replace("'",'"'),
+                'p':cryptoParams['p'],
+                'g':cryptoParams['g'],
+                'randoms':json.dumps(t.decryptionProofRandom)})
         else:
-            return render(request,'generateKeyShare.html',{'election':election,'trustee':trustee, 'started':True})
+            return render(request,'generateKeyShare.html',{'election':election,'trustee':t, 'started':True})
 
-    def postMethodTrustee(election,trustee):
+    def postMethodTrustee(election,t):
         if datetime.datetime.now() < election.startDate:
-            if trustee.publicKeyShare:
+            if t.publicKeyShare:
                 return HttpResponse(json.dumps({'error':'You have already generated a key share'}), content_type='application/json',status=500)
             else:
                 data = json.loads(request.body.decode('utf-8'))
                 if 'pk' in data:
-                    trustee.publicKeyShare = data
+                    t.publicKeyShare = data
                     try:
-                        trustee.save()
+                        t.save()
                     except Exception as exception:
                         return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
                     return HttpResponse(json.dumps({'success':True}), content_type='application/json')
@@ -626,21 +644,21 @@ def trustee(request,election_id):
     except Election.DoesNotExist:
         raise Http404("Election does not exist")
     try:
-        trustee = Trustee.objects.get(election=election,identifier=request.user)
+        t = Trustee.objects.get(election=election,identifier=request.user)
     except Trustee.DoesNotExist:
         return HttpResponseForbidden("Access denied")
     if request.method == 'GET':
-        return getMethodTrustee(election,trustee)
+        return getMethodTrustee(election,t)
     elif request.method == 'POST':
-        return postMethodTrustee(election,trustee)
+        return postMethodTrustee(election,t)
     else:
         return HttpResponseNotAllowed(['GET','POST'])
 
 @login_required
 def trusteeElectionList(request):
     if request.method == 'GET':
-        trustee = Trustee.objects.filter(identifier=request.user)
-        return render(request,'trusteeElectionList.html',{'trustee':trustee})
+        t = Trustee.objects.filter(identifier=request.user)
+        return render(request,'trusteeElectionList.html',{'trustee':t})
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -682,10 +700,10 @@ def bulletinBoard(request,election_id):
         except Election.DoesNotExist:
             raise Http404("Election does not exist")
         keyshares = {}
-        for trustee in Trustee.objects.filter(election=election):
-            if trustee.publicKeyShare:
-                if 'pk' in json.loads(trustee.publicKeyShare.replace('\'','"')):
-                    keyshares[trustee.identifier] = json.loads(trustee.publicKeyShare.replace('\'','"'))
+        for t in Trustee.objects.filter(election=election):
+            if t.publicKeyShare:
+                if 'pk' in json.loads(t.publicKeyShare.replace('\'','"')):
+                    keyshares[t.identifier] = json.loads(t.publicKeyShare.replace('\'','"'))
         voters = {}
         for voter in Voter.objects.filter(election=election):
             if voter.publicCredential:
@@ -696,7 +714,10 @@ def bulletinBoard(request,election_id):
                     voters[voter.identifier] = ""
             else:
                 voters[voter.identifier] = ""
-        return render(request,'bulletinBoard.html',{'election':election,'keyShares':keyshares,'voters':voters})
+        tally = None
+        if election.tally:
+            tally = json.loads(election.tally.replace("'",'"'))
+        return render(request,'bulletinBoard.html',{'election':election,'keyShares':keyshares,'voters':voters,'tally':tally})
     else:
         return HttpResponseNotAllowed(['GET'])
 
@@ -759,10 +780,17 @@ def manageTally(request,election_id):
                 trustees = Trustee.objects.filter(election=election)
                 partialDecryptions = {"partialDecryptionList":[]}
                 numberOfPartialeDecryptions = 0
-                for partial in trustees.values_list('partialDecryption', flat=True):
-                    if partial:
-                        partialDecryptions["partialDecryptionList"].append(json.loads(partial.replace('\'','"')))
+                for t in trustees:
+                    if t.partialDecryption:
+                        p = json.loads(t.partialDecryption.replace('\'','"'))
+                        p["publicKeyShare"] = json.loads(t.publicKeyShare.replace('\'','"'))
+                        p["randoms"] = json.loads(t.decryptionProofRandom.replace('\'','"'))
+                        partialDecryptions["partialDecryptionList"].append(p)
                         numberOfPartialeDecryptions+=1
+                #for partial in trustees.values_list('partialDecryption', flat=True):
+                #    if partial:
+                #        partialDecryptions["partialDecryptionList"].append(json.loads(partial.replace('\'','"')))
+                #        numberOfPartialeDecryptions+=1
                 return render(request,'manageTally.html',{
                     'election':election,
                     'paperVoters':paperVotersIdentifiers,
@@ -932,13 +960,13 @@ def submitPartialDecryption(request,election_id):
         except Election.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         try:
-            trustee = Trustee.objects.get(election=election,identifier=request.user)
+            t = Trustee.objects.get(election=election,identifier=request.user)
         except Trustee.DoesNotExist:
             return HttpResponseForbidden("Access denied")
         if datetime.datetime.now() <= election.endDate:
             return HttpResponse(json.dumps({'error':'The election has not ended. Cannot submit partial decryption.'}),
              content_type='application/json', status=404)
-        if not trustee.publicKeyShare:
+        if not t.publicKeyShare:
             return HttpResponse(json.dumps({'error':'Trustee didn\'t participate in the protocol'}), content_type='application/json', status=500)
         if not election.aggregatedEncTally:
             return HttpResponse(json.dumps({'error':'Trustee cannot submit decryption without aggregated tally'}), content_type='application/json', status=500)
@@ -951,8 +979,8 @@ def submitPartialDecryption(request,election_id):
                 if answer["id"] not in data[question["id"]].keys():
                     return HttpResponse(json.dumps({'error':'Partial Decryption not well formed.'}), content_type='application/json', status=500)
         try:
-            trustee.partialDecryption = data
-            trustee.save()
+            t.partialDecryption = data
+            t.save()
             return HttpResponse(json.dumps({
                 'success':True
                 }),content_type='application/json')
@@ -974,12 +1002,13 @@ def publishResults(request,election_id):
             return HttpResponse(json.dumps({'error':'The election has not ended. Cannot submit election tally.'}),content_type='application/json', status=404)
         try:
             data = json.loads(request.body.decode('utf-8'))
+            print(data)
             questions = getQuestionsAux(election)
             for question in questions["questionList"]:
                 if question["id"] not in data.keys():
                     return HttpResponse(json.dumps({'error':'Results not well formed.'}), content_type='application/json', status=500)
                 for answer in question["answers"]:
-                    if answer["id"] not in data[question["id"]].keys():
+                    if answer["id"] not in data[question["id"]][1].keys():
                         return HttpResponse(json.dumps({'error':'Results not well formed.'}), content_type='application/json', status=500)
             election.tally = data
             election.save()

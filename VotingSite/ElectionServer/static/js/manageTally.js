@@ -199,7 +199,7 @@ function aggregateEncTally(token,currentUrl,redirectUrl){
 
 var lookup;
 
-function publishResults(){
+function publishResults(token,currentUrl,redirectUrl){
     var scriptFiles = []
     var scripts = document.getElementsByClassName("import")
     for(var i = 0; i<scripts.length;i++){
@@ -207,27 +207,85 @@ function publishResults(){
     }
 
     var param = {
-        fn:generate_lookup_table,
-        args:[pValue,gValue,numberOfEBallots],
+        fn:verifyPartialDecryptionProof,
+        args:[pValue,gValue,questionList,partialDecryptions,aggregatedEncTally],
         importFiles: scriptFiles
     }
 
-    vkthread.exec(param).then(function(table){
-        lookup = $.extend({}, table);
-        var param = {
-            fn:calculateResults,
-            args:[pValue,questionList,partialDecryptions,aggregatedEncTally,lookup],
-            importFiles:scriptFiles
+    vkthread.exec(param).then(function(data){
+        if(data){
+            var param = {
+                fn:generate_lookup_table,
+                args:[pValue,gValue,numberOfEBallots],
+                importFiles: scriptFiles
+            }
+
+            vkthread.exec(param).then(function(table){
+                lookup = $.extend({}, table);
+                var param = {
+                    fn:calculateResults,
+                    args:[pValue,questionList,partialDecryptions,aggregatedEncTally,paperResults,lookup],
+                    importFiles:scriptFiles
+                }
+                vkthread.exec(param).then(function(results){
+                    url = window.location.toString();
+                    requestUrl = url.replace(currentUrl, redirectUrl);
+
+                    $.ajaxSetup({headers: { "X-CSRFToken": token }});
+                    console.log('Seding request now!');
+                    $.ajax({
+                    type: "POST",
+                    url: requestUrl,
+                    data: JSON.stringify(results),
+                    success: function(msg){
+                        window.location.reload();},
+                    error: function(xhr, ajaxOptions, thrownError){
+                        if(xhr){
+                            alert('Oops: ' + xhr.responseJSON['error']);
+                        }else{
+                            alert('Oops: An unexpected error occurred. Please contact the administrators');
+                        }
+                    },
+                    dataType: "json",
+                    contentType : "application/json",
+                    });
+                });
+            });
+        }else{
+            alert("A decryption proof failed.")
         }
-        vkthread.exec(param).then(function(results){
-            console.log(results);
-        });
     });
 }
 
-function calculateResults(pValue,questionList,partialDecryptions,aggregatedEncTally,table){
+function verifyPartialDecryptionProof(pValue,gValue,questionList,partialDecryptions,aggregatedEncTally){
+    var p = new BigInteger(pValue,10);
+    var g = new BigInteger(gValue,10);
+
+    for(var i=0;i<questionList['questionList'].length;i++){
+        var question = questionList['questionList'][i];
+        for(var j=0;j<question["answers"].length;j++){
+            var answer = question["answers"][j];
+            for(var n=0;n<partialDecryptions.length;n++){
+                var alpha = new BigInteger(aggregatedEncTally[question["id"]][answer["id"]]["alpha"],10);
+                var e = new BigInteger(partialDecryptions[n]["randoms"][question["id"]][answer["id"]],10);
+                var h = new BigInteger(partialDecryptions[n]["publicKeyShare"]["pk"],16)
+                var s = new BigInteger(partialDecryptions[n][question["id"]][answer["id"]]["response"],10)
+                var two = new BigInteger('2',10);
+                var decryptionFactor = new BigInteger(partialDecryptions[n][question["id"]][answer["id"]]["decryptionFactor"],10);
+                var A = ((g.modPow(s,p)).multiply((h.modPow(p.subtract(two),p)).modPow(e,p))).mod(p)
+                var B = ((alpha.modPow(s,p)).multiply((decryptionFactor.modPow(p.subtract(two),p)).modPow(e,p))).mod(p)
+                if(A.compareTo(new BigInteger(partialDecryptions[n][question["id"]][answer["id"]]["A"],10))!=0 || B.compareTo(new BigInteger(partialDecryptions[n][question["id"]][answer["id"]]["B"],10))!=0 ){
+                    return false
+                }
+            }
+        }
+    }
+    return true
+}
+
+function calculateResults(pValue,questionList,partialDecryptions,aggregatedEncTally,paperResults,table){
     var results = {}
-    var p = new BigInteger(pValue)
+    var p = new BigInteger(pValue,10)
     for(var i=0;i<questionList['questionList'].length;i++){
         var question = questionList['questionList'][i];
         results[question["id"]] = [question["question"],{}]
@@ -237,8 +295,14 @@ function calculateResults(pValue,questionList,partialDecryptions,aggregatedEncTa
             for(var n=0;n<partialDecryptions.length;n++){
                 alpha = alpha.multiply(new BigInteger(partialDecryptions[n][question["id"]][answer["id"]]["alpha"]));
             }
-            var decryption = (new BigInteger(aggregatedEncTally[question["id"]][answer["id"]]["beta"]).multiply(alpha)).mod(p)
-            results[question["id"]][1][answer["id"]]=[answer["answer"],table[decryption.toString(10)]]
+            var decryption = (new BigInteger(aggregatedEncTally[question["id"]][answer["id"]]["beta"]).multiply(alpha)).mod(p)  
+            if(paperResults!=null){
+                var paperVotes = parseInt(paperResults[question["id"]][answer["id"]])
+                var electronicVotes = parseInt(table[decryption.toString(10)])
+                results[question["id"]][1][answer["id"]] = [answer["answer"],(paperVotes+electronicVotes)+'']
+            }else{
+                results[question["id"]][1][answer["id"]]=[answer["answer"],table[decryption.toString(10)]]
+            }
         }
     }
     return results

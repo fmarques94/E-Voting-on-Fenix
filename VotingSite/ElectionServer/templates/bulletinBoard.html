@@ -10,7 +10,7 @@
 
 {% block content %}
 <h2>{{election.name}}</h2>
-<table>
+<table class="BigTable" id="infoTable">
     <tr>
         <td>
             <u class="rowIdentifier">Description:</u>
@@ -65,10 +65,27 @@
     {% endif %}
 </table>
 <br>
+{% if election.tally %}
+<h3>Election Tally</h3>
+<table class="resultsTable">
+{% for questionId,questionData in tally.items %}
+<tr>
+<th colspan="2"> {{questionData.0}} </th>
+</tr>
+{% for answerId,answerData in questionData.1.items%}
+<tr>
+    <td>{{answerData.0}}</td>
+    <td>{{answerData.1}}</td>
+</tr>
+{% endfor %}
+{% endfor %}
+</table>
+{% endif %}
+<br>
 <a class="ToggleButton" id="toggleButtonTrustees" href="javascript:togglePublicKeyShares()">Show Trustees Public Shares</a>
 <a class="ToggleButton" id="toggleButtonVoters" href="javascript:toggleEligibleVoters()">Show Eligible Voters</a>
 <br><br>
-<div id="eligibleVoters">
+<div class="BigTable" id="eligibleVoters">
     <table>
         <tr>
             <th class="rowIdentifier">
@@ -91,7 +108,7 @@
     </table>
 </div>
 
-<div id="trusteesPublicShares">
+<div class="BigTable" id="trusteesPublicShares">
     <table>
         <tr>
             <th class="rowIdentifier">

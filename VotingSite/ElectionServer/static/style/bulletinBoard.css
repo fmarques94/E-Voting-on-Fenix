@@ -20,10 +20,15 @@
     background-color: #424040;
 }
 
-table{
+.BigTable{
     border: 1px solid darkgray;
     width: 100%;
     border-collapse: collapse;
+}
+
+.resultsTable{
+    border: 1px solid darkgray;
+    
 }
 
 .rowIdentifier{

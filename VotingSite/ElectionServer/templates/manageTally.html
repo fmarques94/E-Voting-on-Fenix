@@ -25,6 +25,11 @@
     var aggregatedEncTally = JSON.parse("{{election.aggregatedEncTally|escapejs}}".replace(/'/g,'"'));
     var partialDecryptions = JSON.parse("{{partialDecryptions|escapejs}}")["partialDecryptionList"];
     var numberOfEBallots = {{numberOfEBallots}}
+    {% if election.hybrid %}
+    var paperResults = JSON.parse("{{election.paperResults|escapejs}}".replace(/'/g,'"'));
+    {% else %}
+    var paperResults = null;
+    {% endif %}
     {% endif %}
 </script>
 {% endblock %}
@@ -92,6 +97,8 @@
     </table>
 {% elif election.aggregatedEncTally and not election.tally and ready %}
     <a class="button" href="javascript:publishResults('{{ csrf_token }}','{% url 'manageTally' election_id=election.id %}','{% url 'publishResults' election_id=election.id %}')">Aggreate and Publish Results</a>
+{% elif election.tally %}
+    <p>Election result have been published!</p>
 {% endif %}
 </div>
 {% endblock %}

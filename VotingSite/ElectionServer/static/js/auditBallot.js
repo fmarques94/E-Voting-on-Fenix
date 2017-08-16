@@ -180,7 +180,7 @@ function checkProofs(){
                 var response = new BigInteger(individualProof[n]["response"],10)
                 var A = (this.g.modPow(response,this.p).multiply((alpha.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge,this.p))).mod(this.p)
                 var B = ((this.electionPublicKey.modPow(response,this.p).multiply((beta.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge,this.p))).multiply(this.g.modPow(challenge.multiply(new BigInteger(parseInt(n),10)),this.p))).mod(this.p);
-                if(A.toString(10) != individualProof[n]["A"] && B.toString(10) != individualProof[n]["B"]){
+                if(A.toString(10) != individualProof[n]["A"] || B.toString(10) != individualProof[n]["B"]){
                     return [false,"individual",this.questionList[i]["question"]]
                 }
             }
