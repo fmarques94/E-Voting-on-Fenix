@@ -19,4 +19,5 @@ from Registration import views
 
 urlpatterns = [
     url(r'^$', views.createCredentials, name="createCredentials"),
+    url(r'^addElection/$', views.addElection, name="addElection"),
 ]

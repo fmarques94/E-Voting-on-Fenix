@@ -54,29 +54,33 @@ def createElection(request):
     def postCreateElection(request):
         try:
             data = json.loads(request.body.decode('utf-8'))
-            election = Election()
-            election.name = data['name']
-            election.description = data['description']
-            election.hybrid = data['paperVotes']
-            election.startDate = data['startDate'] #datetime.datetime.strptime(data['startDate'],'%d-%m-%Y %H:%M')
-            election.endDate = data['endDate']#datetime.datetime.strptime(data['endDate'],'%d-%m-%Y %H:%M')
-            if datetime.datetime.strptime(data['startDate'],'%Y-%m-%d %H:%M') < datetime.datetime.now():
-                return HttpResponse(json.dumps({'error':'The election date is in the past.'})
-            , content_type='application/json', status=406) 
-            if election.endDate <= election.startDate:
-                return HttpResponse(json.dumps({'error':'The election end date must be greater than the election start date.'})
-            , content_type='application/json', status=406) 
-            if 'openCastTime' in data.keys():
-                election.openCastTime = data['openCastTime']
-                election.closeCastTime = data['closeCastTime']
-            election.admin = request.user
-            parameters = generate_parameters()
-            election.cryptoParameters = {
-                "p":str(parameters['p']),
-                "q":str(parameters['q']),
-                "g":str(parameters['g'])
-            }
-            election.save()
+            with transaction.atomic():    
+                election = Election()
+                election.name = data['name']
+                election.description = data['description']
+                election.hybrid = data['paperVotes']
+                election.startDate = data['startDate']
+                election.endDate = data['endDate']
+                if datetime.datetime.strptime(data['startDate'],'%Y-%m-%d %H:%M') < datetime.datetime.now():
+                    return HttpResponse(json.dumps({'error':'The election date is in the past.'})
+                , content_type='application/json', status=406) 
+                if election.endDate <= election.startDate:
+                    return HttpResponse(json.dumps({'error':'The election end date must be greater than the election start date.'})
+                , content_type='application/json', status=406) 
+                if 'openCastTime' in data.keys():
+                    election.openCastTime = data['openCastTime']
+                    election.closeCastTime = data['closeCastTime']
+                election.admin = request.user
+                parameters = generate_parameters()
+                election.cryptoParameters = {
+                    "p":str(parameters['p']),
+                    "q":str(parameters['q']),
+                    "g":str(parameters['g'])
+                }
+                election.save()
+                r = requests.post(settings.CREDENTIAL_AUTHORITY+"/addElection/",data=json.dumps({'election':{'id':str(election.id),'endDate':election.endDate}}))
+                if r.status_code!=200:
+                    raise Exception('Got error code ' + str(r.status_code) + ' from registration server')
             return HttpResponse(json.dumps({
                 'success':True,
                 'currentUrl':reverse('createElection'),
