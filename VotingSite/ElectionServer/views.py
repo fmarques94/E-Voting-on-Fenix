@@ -33,11 +33,18 @@ from ElectionServer.Crypto.ParameterGenerator import generate_parameters
 from ElectionServer.Crypto import Schnorr
 
 def home(request):
-    context = {'elections': Election.objects.all()}
-    return render(request,'home.html',context)
+    return render(request,'home.html',{'admin':str(request.user) in settings.AUTHORIZED_ADMINS})
 
 def login(request):
     return render(request,'login.html')
+
+def elections(request):
+    context = {'elections': Election.objects.all()}
+    return render(request,'elections.html',context)
+
+def manageElections(request):
+    context = {'elections': Election.objects.filter(admin=request.user)}
+    return render(request,'manageElections.html',context)
 
 def getElections(request):
     if request.method == 'GET':
@@ -721,7 +728,13 @@ def bulletinBoard(request,election_id):
         tally = None
         if election.tally:
             tally = json.loads(election.tally.replace("'",'"'))
-        return render(request,'bulletinBoard.html',{'election':election,'keyShares':keyshares,'voters':voters,'tally':tally})
+        return render(request,'bulletinBoard.html',{
+            'election':election,
+            'keyShares':keyshares,
+            'voters':voters,
+            'tally':tally,
+            'eligibleVoter':str(request.user) in voters.keys()
+            })
     else:
         return HttpResponseNotAllowed(['GET'])
 

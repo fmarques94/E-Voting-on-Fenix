@@ -7,52 +7,10 @@
 {% endblock %}
 
 {% block content %}
-    {% for election in elections %}
-        <a href="{% url 'bulletinBoard' election_id=election.id %}">
-            <div class='ElectionBox'>
-                <table>
-                    <tr>
-                        <td>
-                            <strong>Name:</strong>
-                        </td>
-                        <td>
-                            {% autoescape on %}{{election.name}}{% endautoescape %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <strong>Description:</strong>
-                        </td>
-                        <td>
-                            {% autoescape on %}{{election.description}}{% endautoescape %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <strong>Election Date:</strong>
-                        </td>
-                        <td>
-                            {{election.startDate|date:"Y-m-d, H:i"}} until {{election.endDate|date:"Y-m-d, H:i"}}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <strong>Booth Times:</strong>
-                        </td>
-                        {% if election.openCastTime %}
-                        <td>
-                            {{election.openCastTime|time:"H:i"}} until {{election.closeCastTime|date:"H:i"}}
-                        </td>
-                        {% else%}
-                        <td>
-                            Open all the time for the duration of the election.
-                        </td>
-                        {% endif %}
-                    </tr>
-                </table>
-            </div>
-        </a>
-    {% empty %}
-        <p>No elections are running or planned at the current time.</p>
-    {% endfor %}
+<p><b>Welcome</b> to the e-voting website for IST. This site is currently a prototype.</p>
+<p>To login you only need to use your Fenix credentials.</p>
+{% if admin %}
+<p>You can create a election using the following button:</p>
+<a class="Button" href="{% url 'createElection' %}">Create Election</a>
+{% endif %}
 {% endblock %}

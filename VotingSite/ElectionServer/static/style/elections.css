@@ -1,0 +1,9 @@
+.ElectionBox{
+    background-color: lightgrey;
+    margin-bottom: 10px;
+    margin-left: 10px;
+}
+
+.content a{
+    text-decoration: none;
+}

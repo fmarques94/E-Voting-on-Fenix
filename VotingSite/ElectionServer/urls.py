@@ -8,8 +8,10 @@ idRegEx = 'ist1\d+'
 
 urlpatterns = [
     url(r'^$', views.home, name='home'),
+    url(r'^elections/$', views.elections, name='elections'),
     url(r'^create/$', views.createElection, name='createElection'),
     url(r'^getElections/$', views.getElections, name='getElections'),
+    url(r'^manageElections/$', views.manageElections, name='manageElections'),
     url(r'^election/(?P<election_id>'+uuidRegEx+')/$', views.election, name='election'),
     url(r'^election/(?P<election_id>'+uuidRegEx+')/manageTrustees/$', views.manageTrustees, name='manageTrustees'),
     url(r'^election/(?P<election_id>'+uuidRegEx+')/addTrustees/$', views.addTrustees, name='addTrustees'),

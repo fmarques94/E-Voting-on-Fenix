@@ -82,6 +82,9 @@
 </table>
 {% endif %}
 <br>
+{% if eligibleVoter and not election.tally %}
+<a  class="ToggleButton" href="{% url 'cast' election_id=election.id %}">Vote</a>
+{% endif %}
 <a class="ToggleButton" id="toggleButtonTrustees" href="javascript:togglePublicKeyShares()">Show Trustees Public Shares</a>
 <a class="ToggleButton" id="toggleButtonVoters" href="javascript:toggleEligibleVoters()">Show Eligible Voters</a>
 <br><br>

@@ -31,7 +31,9 @@
         <div class="mainContainer">
             <div class="sidebar">
                 <a class="sidebarButton" id="home" href="{% url 'home' %}">Home</a>
-                <a class="sidebarButton" id="create" href="{% url 'createElection' %}">Create Election</a>
+                <a class="sidebarButton" id="elections" href="{% url 'elections'%}">Elections</a>
+                <a class="sidebarButton" id="manageElections" href="{% url 'manageElections'%}">Manage Elections</a>
+                <!--<a class="sidebarButton" id="create" href="{% url 'createElection' %}">Create Election</a>-->
                 <a class="sidebarButton" id="trusted" href="{% url 'trusteeList' %}">Trusted Elections</a>
                 <!--<ul class="redirectList">
                     <li class="firstListItem listItem"><div>Menu</div></li>
