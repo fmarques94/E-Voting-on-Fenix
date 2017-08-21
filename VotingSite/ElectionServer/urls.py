@@ -38,6 +38,7 @@ urlpatterns = [
     url(r'^election/(?P<election_id>'+uuidRegEx+')/submitEncryptedTally/$', views.submitEncryptedTally, name='submitEncryptedTally'),
     url(r'^election/(?P<election_id>'+uuidRegEx+')/submitPartialDecryption/$', views.submitPartialDecryption, name='submitPartialDecryption'),
     url(r'^election/(?P<election_id>'+uuidRegEx+')/publishResults/$', views.publishResults, name='publishResults'),
+    url(r'^election/(?P<election_id>'+uuidRegEx+')/delete/$', views.deleteElection, name='deleteElection'),
     url(r'^trusteeElectionList/$', views.trusteeElectionList, name='trusteeList'),
     url(r'^election/(?P<election_id>'+uuidRegEx+')/trustee/$', views.trustee, name='trustee'),
     url(r'^login/$', views.login, name='login'),

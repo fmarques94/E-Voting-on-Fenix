@@ -42,7 +42,7 @@
         <fieldset>
             <legend><h2>Add Voters CSV File</h2></legend>
             <input type="file" name="csv" accept=".csv" required>
-            <input class="button" type="submit">
+            <input class="button" id="submitPaperVoterButton" type="submit"><div class="loader"></div>
         </fieldset>
     </form>
 
@@ -69,6 +69,7 @@
     </div>
 {% elif not election.hybrid and not election.aggregatedEncTally or election.hybrid and not election.aggregatedEncTally and election.paperResults%}
     <a class="button" href="javascript:aggregateEncTally('{{ csrf_token }}','{% url 'manageTally' election_id=election.id %}','{% url 'submitEncryptedTally' election_id=election.id %}')">Aggregate encrypted Tally</a>
+    <div class="loader"></div>
 {% elif election.aggregatedEncTally and not election.tally and not ready %}
     <p>Please wait until all trustees have made their partial decryptions.</p>
     <table style="text-align:center;">
@@ -97,6 +98,7 @@
     </table>
 {% elif election.aggregatedEncTally and not election.tally and ready %}
     <a class="button" href="javascript:publishResults('{{ csrf_token }}','{% url 'manageTally' election_id=election.id %}','{% url 'publishResults' election_id=election.id %}')">Aggreate and Publish Results</a>
+    <div class="loader"></div>
 {% elif election.tally %}
     <p>Election result have been published!</p>
 {% endif %}

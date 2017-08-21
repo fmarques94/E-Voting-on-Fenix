@@ -10,6 +10,8 @@ function auditorVariable(electionPublicKey,cryptoParameters,ballot,questionList,
 var auditor = null;
 
 function audit(){
+    $('.submitButton').css("display", "none");
+    $('.loader').css("display", "block");
     ballot = JSON.parse($('#auditForm textarea[name=ballot]').val());
     var scriptFiles = []
     var scripts = document.getElementsByClassName("import")
@@ -38,6 +40,8 @@ function audit(){
             }
         }else{
             $('.results').append("<p> Ballot is not well formed.</p>");
+            $('.submitButton').css("display", "block");
+            $('.loader').css("display", "none");
             return;
         }
 
@@ -56,6 +60,8 @@ function audit(){
                 $('.results').append("<p>Encryption check passed</p>");
             }else{
                 $('.results').append("<p>Encryption check failed on question: "+data+"</p>");
+                $('.submitButton').css("display", "block");
+                $('.loader').css("display", "none");
                 return;
             }
 
@@ -73,6 +79,8 @@ function audit(){
                     $('.results').append("<p>Proofs check passed</p>");
                 }else{
                     $('.results').append("<p>Proof check failed on "+data[1]+" proof of question: "+data[2]+"</p>");
+                    $('.submitButton').css("display", "block");
+                    $('.loader').css("display", "none");
                     return;
                 }
 
@@ -87,8 +95,12 @@ function audit(){
                     $('.results').append("<h4>Signature Check</h4>");
                     if(data){
                         $('.results').append("<p>Signature check passed</p>");
+                        $('.submitButton').css("display", "block");
+                        $('.loader').css("display", "none");
                     }else{
                         $('.results').append("<p>Signature check failed</p>");
+                        $('.submitButton').css("display", "block");
+                        $('.loader').css("display", "none");
                         return;
                     }
                 });

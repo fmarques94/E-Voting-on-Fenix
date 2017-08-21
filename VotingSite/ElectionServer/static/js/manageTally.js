@@ -38,11 +38,13 @@ function showNextQuestion(){
         htmlCode = htmlCode + "<tr><td>"+question["answers"][i]["answer"]+"</td>"+
             "<td><input type=\"text\" autocomplete=\"off\" pattern=\"[0-9]+\" required></td>";
     }
-    htmlCode = htmlCode + "</table><input class=\"button\" type=\"submit\" value=\"Next\">"
+    htmlCode = htmlCode + "</table><input class=\"button\" id=\"submitPaperResultsButton\" type=\"submit\" value=\"Next\"><div class=\"loader\"></div>"
     $('.PaperResultsForm').html(htmlCode)
 }
 
 function sendPaperResults(){
+    $('#submitPaperResultsButton').css("display", "none");
+    $('.loader').css("display", "block");
     url = window.location.toString();
     requestUrl = url.replace(currentUrl, paperResultsUrl);
     $.ajaxSetup({headers: { "X-CSRFToken": token }});
@@ -55,8 +57,12 @@ function sendPaperResults(){
         window.location.reload();},
     error: function(xhr, ajaxOptions, thrownError){
         if(xhr){
+            $('#submitPaperResultsButton').css("display", "block");
+            $('.loader').css("display", "none");
             alert('Oops: ' + xhr.responseJSON['error']);
         }else{
+            $('#submitPaperResultsButton').css("display", "block");
+            $('.loader').css("display", "none");
             alert('Oops: An unexpected error occurred. Please contact the administrators');
         }
         window.location.reload();
@@ -67,6 +73,8 @@ function sendPaperResults(){
 }
 
 function paperVotersSubmit(token,currentUrl,redirectUrl){
+    $('#submitPaperVoterButton').css("display", "none");
+    $('.loader').css("display", "block");
     filename = $('#addPaperVoterForm input:file[name=csv]').val();
     if(filename.substr(filename.length - 4, 4).toLowerCase() != '.csv'){
         alert('Oops: The voters file must be a .csv file.');
@@ -90,8 +98,12 @@ function paperVotersSubmit(token,currentUrl,redirectUrl){
     error: function(xhr, ajaxOptions, thrownError){
         if(xhr){
             alert('Oops: ' + xhr.responseJSON['error']);
+            $('#submitPaperVoterButton').css("display", "block");
+            $('.loader').css("display", "none");
         }else{
             alert('Oops: An unexpected error occurred. Please contact the administrators');
+            $('.#submitPaperVoterButton').css("display", "block");
+            $('.loader').css("display", "none");
         }
     },
     dataType: "json",
@@ -129,6 +141,9 @@ function removePaperVoter(token,currentUrl,redirectUrl,voterId){
 }
 
 function aggregateEncTally(token,currentUrl,redirectUrl){
+
+    $('.button').css("display", "none");
+    $('.loader').css("display", "block");
 
     var scriptFiles = []
     var scripts = document.getElementsByClassName("import")
@@ -187,8 +202,12 @@ function aggregateEncTally(token,currentUrl,redirectUrl){
         error: function(xhr, ajaxOptions, thrownError){
             if(xhr){
                 alert('Oops: ' + xhr.responseJSON['error']);
+                $('.button').css("display", "block");
+                $('.loader').css("display", "none");
             }else{
                 alert('Oops: An unexpected error occurred. Please contact the administrators');
+                $('.button').css("display", "block");
+                $('.loader').css("display", "none");
             }
         },
         dataType: "json",
@@ -200,6 +219,8 @@ function aggregateEncTally(token,currentUrl,redirectUrl){
 var lookup;
 
 function publishResults(token,currentUrl,redirectUrl){
+    $('.button').css("display", "none");
+    $('.loader').css("display", "block");
     var scriptFiles = []
     var scripts = document.getElementsByClassName("import")
     for(var i = 0; i<scripts.length;i++){
@@ -242,8 +263,12 @@ function publishResults(token,currentUrl,redirectUrl){
                     error: function(xhr, ajaxOptions, thrownError){
                         if(xhr){
                             alert('Oops: ' + xhr.responseJSON['error']);
+                            $('.button').css("display", "block");
+                            $('.loader').css("display", "none");
                         }else{
                             alert('Oops: An unexpected error occurred. Please contact the administrators');
+                            $('.button').css("display", "block");
+                            $('.loader').css("display", "none");
                         }
                     },
                     dataType: "json",

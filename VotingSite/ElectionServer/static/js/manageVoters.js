@@ -10,6 +10,8 @@ function toggleVoterList(){
 }
 
 function submit(token,currentUrl,redirectUrl){
+    $('#addVoterButton').css("display", "none");
+    $('.loader').css("display", "block");
     payload={
         "voterList":[]
     };
@@ -34,8 +36,12 @@ function submit(token,currentUrl,redirectUrl){
     error: function(xhr, ajaxOptions, thrownError){
         if(xhr){
             alert('Oops: ' + xhr.responseJSON['error']);
+            $('#addVoterButton').css("display", "block");
+            $('.loader').css("display", "none");
         }else{
             alert('Oops: An unexpected error occurred. Please contact the administrators');
+            $('#addVoterButton').css("display", "block");
+            $('.loader').css("display", "none");
         }
     },
     dataType: "json",
@@ -45,6 +51,8 @@ function submit(token,currentUrl,redirectUrl){
 
 
 function fileSubmit(token,currentUrl,redirectUrl){
+    $('#addVoterFileButton').css("display", "none");
+    $('.loader').css("display", "block");
     filename = $('#addVoterFileForm input:file[name=csv]').val();
     if(filename.substr(filename.length - 4, 4).toLowerCase() != '.csv'){
         alert('Oops: The voters file must be a .csv file.');
@@ -68,8 +76,12 @@ function fileSubmit(token,currentUrl,redirectUrl){
     error: function(xhr, ajaxOptions, thrownError){
         if(xhr){
             alert('Oops: ' + xhr.responseJSON['error']);
+            $('#addVoterFileButton').css("display", "block");
+            $('.loader').css("display", "none");
         }else{
             alert('Oops: An unexpected error occurred. Please contact the administrators');
+            $('#addVoterFileButton').css("display", "block");
+            $('.loader').css("display", "none");
         }
     },
     dataType: "json",

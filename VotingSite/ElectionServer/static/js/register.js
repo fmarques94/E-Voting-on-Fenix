@@ -1,4 +1,8 @@
 function register(token,currentUrl,redirectUrl,voterEmail){
+
+    $('.registerButton').css("display", "none");
+    $('.loader').css("display", "block");
+
     url = window.location.toString();
     requestUrl = url.replace(currentUrl, redirectUrl);
 
@@ -9,6 +13,7 @@ function register(token,currentUrl,redirectUrl,voterEmail){
     url: requestUrl,
     success: function(msg){
         $(".registerButton").remove();
+        $(".loader").remove();
         $(".content").append(
             "<p>The credentials have been sent to your email address at "+voterEmail+"</p>"+
             "<a class=\"registerButton\" href=\"javascript:refresh()\">Click here to vote</a>"
@@ -17,8 +22,12 @@ function register(token,currentUrl,redirectUrl,voterEmail){
     error: function(xhr, ajaxOptions, thrownError){
         if(xhr){
             alert('Oops: ' + xhr.responseJSON['error']);
+            $('.registerButton').css("display", "block");
+            $('.loader').css("display", "none");
         }else{
             alert('Oops: An unexpected error occurred. Please contact the administrators');
+            $('.registerButton').css("display", "block");
+            $('.loader').css("display", "none");
         }
     },
     dataType: "json",

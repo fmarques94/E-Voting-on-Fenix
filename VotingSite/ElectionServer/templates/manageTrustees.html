@@ -37,6 +37,7 @@
     {% else %}
         {% if keyShares|length > 0 %}
         <a class="button" id="generateKeyButton" href="javascript:aggregateKey('{{ csrf_token }}',{{keyShares}},{{election.cryptoParameters}},'{% url 'manageTrustees' election_id=election.id %}','{% url 'setPublicKey' election_id=election.id %}')">Generate Election Public Key</a>
+        <div class="loader"></div>
         {% endif %}
     {% endif%}
     {% if election.trustee_set.all %}

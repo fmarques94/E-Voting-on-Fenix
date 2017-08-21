@@ -4,10 +4,19 @@
 <title>{% autoescape on %}{{election.name}}{% endautoescape %}</title>        
 {% load static %}
 <link rel="stylesheet" type="text/css" href="{% static 'style/manageElection.css' %}" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="{% static 'js/manageElection.js' %}"></script>
 {% endblock %}
 
 {% block content %}
 <h2>{% autoescape on %}{{election.name}}{% endautoescape %}</h2>
+<div id="info" style="border: 1px solid #696969;">
+    <p>Here you can manage the election.You must add the questions, trustees and eligible voters before the election begins.</p>
+    <p>It is important that you aggregate the election public key from the shared keys from the trustees.</p>
+    <p>At the end of the election, you must aggregate the tally in order for the trustees to decrypt it.If there are paper votes from the election, you will have to input the voters ids and paper results first.</p>
+    <p>In the end you will be able to publish the results when all the trustees who helped generate the public key have decrypted the aggregated tally.</p>
+    <p>At any time you can delete the election, but only with good reason for so.</p>
+</div>
 <table>
     <tr>
         <td>
@@ -60,5 +69,5 @@
 {% if endOfElection %}
 <a class="ManageButton" href="{% url 'manageTally' election_id=election.id %}">Manage Tally</a>
 {% endif %}
-
+<a class="ManageButton" id="delete" href="javascript:deleteElection('{{ csrf_token}}','{% url 'deleteElection' election_id=election.id %}')">DeleteElection</a>
 {% endblock %}

@@ -26,6 +26,7 @@
     {% else %}
     <div id="keyShare">
         <a class="button" id="generateKeyShareButton" href="javascript:generateKeyShare({{election.cryptoParameters}},'{{trustee.keyShareProofRandom}}','{{csrf_token}}')">Generate Key Share</a>
+        <div class="loader"></div>
     </div>
     {% endif %}
 {% endif %}

@@ -71,7 +71,8 @@ function submit(token,currentUrl,redirectUrl){
 }
 
 function aggregateKey(token,keyShares,cryptoParameters,currentUrl,redirectUrl){
-
+    $('#generateKeyButton').css("display", "none");
+    $('.loader').css("display", "block");
     var scriptFiles = []
     var scripts = document.getElementsByClassName("import")
     for(var i = 0; i<scripts.length;i++){
@@ -122,8 +123,12 @@ function aggregateKey(token,keyShares,cryptoParameters,currentUrl,redirectUrl){
             error: function(xhr, ajaxOptions, thrownError){
                 if(xhr){
                     alert('Oops: ' + xhr.responseJSON['error']);
+                    $('#generateKeyButton').css("display", "block");
+                    $('.loader').css("display", "none");
                 }else{
                     alert('Oops: An unexpected error occurred. Please contact the administrators');
+                    $('#generateKeyButton').css("display", "block");
+                    $('.loader').css("display", "none");
                 }
             },
             dataType: "json",
@@ -131,6 +136,8 @@ function aggregateKey(token,keyShares,cryptoParameters,currentUrl,redirectUrl){
             });
         }else{
             alert('Oops: The proof of trustee ' + data[1] + 'failed. Aborting...');
+            $('#generateKeyButton').css("display", "block");
+            $('.loader').css("display", "none");
         }
     });
 

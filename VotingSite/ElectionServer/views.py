@@ -1036,3 +1036,22 @@ def publishResults(request,election_id):
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
     else:
         return HttpResponseNotAllowed(['POST'])
+
+@login_required
+def deleteElection(request,election_id):
+    if request.method == 'POST':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        try:
+            election.delete()
+            return HttpResponse(json.dumps({
+                'success':True
+                }),content_type='application/json')
+        except Exception as exception:
+            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
+    else:
+        return HttpResponseNotAllowed(['POST'])

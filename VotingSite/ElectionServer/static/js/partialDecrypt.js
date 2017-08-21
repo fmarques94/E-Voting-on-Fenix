@@ -1,6 +1,9 @@
 //passar isto para outra thread.
 
 function partialDecrypt(token,currentUrl,redirectUrl){
+    $('.submitButton').css("display", "none");
+    $('.loader').css("display", "block");
+
     var privKeyValue =$('#partialDecryptForm textarea[name=secret]').val();
     var scriptFiles = []
     var scripts = document.getElementsByClassName("import")
@@ -64,8 +67,12 @@ function partialDecrypt(token,currentUrl,redirectUrl){
         error: function(xhr, ajaxOptions, thrownError){
             if(xhr){
                 alert('Oops: ' + xhr.responseJSON['error']);
+                $('.submitButton').css("display", "block");
+                $('.loader').css("display", "none");
             }else{
                 alert('Oops: An unexpected error occurred. Please contact the administrators');
+                $('.submitButton').css("display", "block");
+                $('.loader').css("display", "none");
             }
         },
         dataType: "json",

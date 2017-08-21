@@ -14,6 +14,6 @@
 
 <p>In order to vote electronically you must first register yourself and receive your credentials.</p>
 
-<a class="registerButton" href="javascript:register('{{ csrf_token }}','{% url 'cast' election_id=election.id %}','{% url 'register' election_id=election.id %}','{{email|escapejs}}')">Register</a>
+<a class="registerButton" href="javascript:register('{{ csrf_token }}','{% url 'cast' election_id=election.id %}','{% url 'register' election_id=election.id %}','{{email|escapejs}}')">Register</a><div class="loader"></div>
 
 {% endblock%}

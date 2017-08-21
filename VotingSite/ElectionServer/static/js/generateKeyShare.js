@@ -1,4 +1,8 @@
 function generateKeyShare(cryptoParam,random,token){
+
+    $('#generateKeyShareButton').css("display", "none");
+    $('.loader').css("display", "block");
+
     var scriptFiles = []
     var scripts = document.getElementsByClassName("import")
     for(var i = 0; i<scripts.length;i++){
@@ -50,6 +54,7 @@ function generateKeyShare(cryptoParam,random,token){
         url: window.location.toString(),
         data: JSON.stringify(payload),
         success: function(msg){
+            $('.loader').remove();
             $('#generateKeyShareButton').remove();
             $('#keyShare').addClass("message");
             $('.message').append(
@@ -61,8 +66,12 @@ function generateKeyShare(cryptoParam,random,token){
         error: function(xhr, ajaxOptions, thrownError){
             if(xhr){
                 alert('Oops: ' + xhr.responseJSON['error']);
+                $('#generateKeyShareButton').css("display", "block");
+                $('.loader').css("display", "none");
             }else{
                 alert('Oops: An unexpected error occurred. Please contact the administrators');
+                $('#generateKeyShareButton').css("display", "block");
+                $('.loader').css("display", "none");
             }
         },
         dataType: "json",

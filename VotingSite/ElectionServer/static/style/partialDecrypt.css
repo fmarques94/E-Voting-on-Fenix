@@ -1,0 +1,29 @@
+.loader {
+    border: 10px solid grey;
+    border-top: 10px solid #424040;
+    display: none;
+    border-radius: 50%;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.submitButton{
+    background-color: #696969;
+    border: none;
+    color: white;
+    font-weight: bold;
+    padding: 10px 15px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    margin: 2px 2px 2px 2px;
+    cursor: pointer;
+}
+
+.submitButton:hover{
+    background-color: #424040;
+}
