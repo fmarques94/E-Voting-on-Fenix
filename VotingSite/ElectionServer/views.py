@@ -42,6 +42,7 @@ def elections(request):
     context = {'elections': Election.objects.all()}
     return render(request,'elections.html',context)
 
+@login_required
 def manageElections(request):
     context = {'elections': Election.objects.filter(admin=request.user)}
     return render(request,'manageElections.html',context)
