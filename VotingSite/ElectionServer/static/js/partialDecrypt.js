@@ -1,4 +1,7 @@
-//passar isto para outra thread.
+$(document).ready(function() {
+    $('.loader').height($('.submitButton').height());
+    $('.loader').width($('.loader').height());
+});
 
 function partialDecrypt(token,currentUrl,redirectUrl){
     $('.submitButton').css("display", "none");

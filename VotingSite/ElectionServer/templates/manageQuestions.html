@@ -11,7 +11,7 @@
 {% block content %}
 <h2>{% autoescape on %}{{election.name}}{% endautoescape %}</h2>
 
-<form id="addQuestionForm" action="javascript:submit('{{ csrf_token }}','{% url 'manageQuestions' election_id=election.id %}','{% url 'addQuestions' election_id=election.id %}')">
+<form id="addQuestionForm" action="javascript:submit('{{ csrf_token }}','{% url 'manageQuestions' election_id=election.id %}','{% url 'addQuestions' election_id=election.id %}')" autocomplete="off">
     <fieldset>
         <legend><h2>Add Question</h2></legend>
         <table class="inputTable">
@@ -20,7 +20,7 @@
                     <b>Question:</b>
                 </td>
                 <td>
-                    <input type="text" name="question" required>
+                    <input type="text" name="question" required size="75">
                 </td>
             </tr>
             <tr>
@@ -28,7 +28,7 @@
                     <b>Answer #1:</b>
                 </td>
                 <td>
-                    <input type="text" name="answer_1" required>
+                    <input type="text" name="answer_1" required size="75">
                 </td>
             </tr>
             <tr>
@@ -36,7 +36,7 @@
                     <b>Answer #2:</b>
                 </td>
                 <td>
-                    <input type="text" name="answer_2" required>
+                    <input type="text" name="answer_2" required size="75">
                 </td>
             </tr>
         </table>

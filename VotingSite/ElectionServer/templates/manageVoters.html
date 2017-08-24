@@ -11,13 +11,13 @@
 {% block content %}
 <h2>{{election.name}}</h2>
 
-<form id="addVoterForm" action="javascript:submit('{{ csrf_token }}','{% url 'manageVoters' election_id=election.id %}','{% url 'addVoters' election_id=election.id %}')">
+<form id="addVoterForm" action="javascript:submit('{{ csrf_token }}','{% url 'manageVoters' election_id=election.id %}','{% url 'addVoters' election_id=election.id %}')" autocomplete="off">
     <fieldset>
         <legend><h2>Add Voter</h2></legend>
         <b>Identifier:</b><br>
-        <input type="text" name="identifier" style="width:50%"><br>
+        <input type="text" name="identifier" style="width:50%" required><br>
         <b>Email:</b><br>
-        <input type="email" name="email" style="width:50%"><br><br>
+        <input type="email" name="email" style="width:50%" required><br><br>
         <input class="button" id="addVoterButton" type="submit"><div class="loader"></div>
     </fieldset>
 </form>
@@ -30,7 +30,7 @@
     </fieldset>
 </form>
 
-<a class="button" id="toogleButton" href="javascript:toggleVoterList()">Hide Voters List</a><br><br>
+<a class="button" id="toggleButton" href="javascript:toggleVoterList()">Hide Voters List</a><br><br>
 <div class="VoterList">
     {% if election.voter_set.all %}
     <table>

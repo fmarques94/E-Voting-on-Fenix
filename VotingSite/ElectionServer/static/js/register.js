@@ -1,6 +1,11 @@
+$(document).ready(function() {
+    $('.loader').height($('.registerButton').height());
+    $('.loader').width($('.loader').height());
+});
+
 function register(token,currentUrl,redirectUrl,voterEmail){
 
-    $('.registerButton').css("display", "none");
+    $('.registerButton').hide();
     $('.loader').css("display", "block");
 
     url = window.location.toString();
@@ -22,11 +27,11 @@ function register(token,currentUrl,redirectUrl,voterEmail){
     error: function(xhr, ajaxOptions, thrownError){
         if(xhr){
             alert('Oops: ' + xhr.responseJSON['error']);
-            $('.registerButton').css("display", "block");
+            $('.registerButton').show();
             $('.loader').css("display", "none");
         }else{
             alert('Oops: An unexpected error occurred. Please contact the administrators');
-            $('.registerButton').css("display", "block");
+            $('.registerButton').show();
             $('.loader').css("display", "none");
         }
     },

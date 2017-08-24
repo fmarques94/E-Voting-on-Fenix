@@ -1,3 +1,8 @@
+$(document).ready(function() {
+    $('.loader').height($('.button').height());
+    $('.loader').width($('.loader').height());
+});
+
 function toggleTrusteeList(){
     $(".TrusteeList").toggle();
     if($(".TrusteeList").is(':hidden')){
@@ -71,7 +76,7 @@ function submit(token,currentUrl,redirectUrl){
 }
 
 function aggregateKey(token,keyShares,cryptoParameters,currentUrl,redirectUrl){
-    $('#generateKeyButton').css("display", "none");
+    $('#generateKeyButton').hide();
     $('.loader').css("display", "block");
     var scriptFiles = []
     var scripts = document.getElementsByClassName("import")
@@ -100,6 +105,7 @@ function aggregateKey(token,keyShares,cryptoParameters,currentUrl,redirectUrl){
                 }else{ 
                     return [false,Object.keys(keyShares)[i]];
                 }
+                electionPublicKey = electionPublicKey.mod(p)
             }
             return [true,electionPublicKey.toString(16)]
         },
@@ -123,11 +129,11 @@ function aggregateKey(token,keyShares,cryptoParameters,currentUrl,redirectUrl){
             error: function(xhr, ajaxOptions, thrownError){
                 if(xhr){
                     alert('Oops: ' + xhr.responseJSON['error']);
-                    $('#generateKeyButton').css("display", "block");
+                    $('#generateKeyButton').show();
                     $('.loader').css("display", "none");
                 }else{
                     alert('Oops: An unexpected error occurred. Please contact the administrators');
-                    $('#generateKeyButton').css("display", "block");
+                    $('#generateKeyButton').show();
                     $('.loader').css("display", "none");
                 }
             },
@@ -136,7 +142,7 @@ function aggregateKey(token,keyShares,cryptoParameters,currentUrl,redirectUrl){
             });
         }else{
             alert('Oops: The proof of trustee ' + data[1] + 'failed. Aborting...');
-            $('#generateKeyButton').css("display", "block");
+            $('#generateKeyButton').show();
             $('.loader').css("display", "none");
         }
     });

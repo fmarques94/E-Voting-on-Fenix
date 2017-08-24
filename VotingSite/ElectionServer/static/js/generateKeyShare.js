@@ -1,3 +1,8 @@
+$(document).ready(function() {
+    $('.loader').height($('#generateKeyShareButton').height());
+    $('.loader').width($('.loader').height());
+});
+
 function generateKeyShare(cryptoParam,random,token){
 
     $('#generateKeyShareButton').css("display", "none");

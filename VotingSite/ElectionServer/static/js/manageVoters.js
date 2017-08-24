@@ -1,16 +1,22 @@
+$(document).ready(function() {
+    $('.loader').height($('.button').height());
+    $('.loader').width($('.loader').height());
+});
 
 
 function toggleVoterList(){
-    $(".VoterList").toggle();
-    if($(".VoterList").is(':hidden')){
-        $("#toggleButton").text('Show Trustee List &#2207')
-    }else{
-        $("#toggleButton").text('Hide Trustee List &#2206')
-    }
+    $(".VoterList").toggle(0,function(){
+        if($(".VoterList").is(':hidden')){
+            $("#toggleButton").text('Show Trustee List')
+        }else{
+            $("#toggleButton").text('Hide Trustee List')
+        }
+    });
 }
 
 function submit(token,currentUrl,redirectUrl){
-    $('#addVoterButton').css("display", "none");
+    $('#addVoterButton').hide();
+    $('#addVoterFileButton').hide();
     $('.loader').css("display", "block");
     payload={
         "voterList":[]
@@ -36,11 +42,13 @@ function submit(token,currentUrl,redirectUrl){
     error: function(xhr, ajaxOptions, thrownError){
         if(xhr){
             alert('Oops: ' + xhr.responseJSON['error']);
-            $('#addVoterButton').css("display", "block");
+            $('#addVoterButton').show();
+            $('#addVoterFileButton').show();
             $('.loader').css("display", "none");
         }else{
             alert('Oops: An unexpected error occurred. Please contact the administrators');
-            $('#addVoterButton').css("display", "block");
+            $('#addVoterButton').show();
+            $('#addVoterFileButton').show();
             $('.loader').css("display", "none");
         }
     },
@@ -51,7 +59,8 @@ function submit(token,currentUrl,redirectUrl){
 
 
 function fileSubmit(token,currentUrl,redirectUrl){
-    $('#addVoterFileButton').css("display", "none");
+    $('#addVoterFileButton').hide();
+    $('#addVoterButton').hide();
     $('.loader').css("display", "block");
     filename = $('#addVoterFileForm input:file[name=csv]').val();
     if(filename.substr(filename.length - 4, 4).toLowerCase() != '.csv'){
@@ -76,11 +85,13 @@ function fileSubmit(token,currentUrl,redirectUrl){
     error: function(xhr, ajaxOptions, thrownError){
         if(xhr){
             alert('Oops: ' + xhr.responseJSON['error']);
-            $('#addVoterFileButton').css("display", "block");
+            $('#addVoterFileButton').show();
+            $('#addVoterButton').show();
             $('.loader').css("display", "none");
         }else{
             alert('Oops: An unexpected error occurred. Please contact the administrators');
-            $('#addVoterFileButton').css("display", "block");
+            $('#addVoterFileButton').show();
+            $('#addVoterButton').show();
             $('.loader').css("display", "none");
         }
     },

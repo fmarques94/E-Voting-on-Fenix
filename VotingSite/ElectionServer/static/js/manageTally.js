@@ -1,6 +1,11 @@
 var currentQuestion=0;
 var paperResults = {}
 
+$(document).ready(function() {
+    $('.loader').height($('.button').height());
+    $('.loader').width($('.loader').height());
+});
+
 function addPaperResuls(){
     $('.manageTallyContent').html(
 
@@ -16,6 +21,8 @@ function nextQuestion(){
     if(currentQuestion<questionList['questionList'].length){
         showNextQuestion();
     }else{
+        $('.loader').height($('.button').height());
+        $('.loader').width($('.loader').height());
         sendPaperResults();
     }
 }

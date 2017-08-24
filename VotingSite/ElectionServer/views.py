@@ -196,7 +196,7 @@ def addVoters(request,election_id):
                         voter.save()
         except IntegrityError:
             return HttpResponse(json.dumps({
-                'error':'Voter with id ' + row[0] + 'is already in the election'
+                'error':'Voter with id ' + row[0] + ' is already in the election'
                 }), content_type='application/json',status=500)
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
@@ -217,7 +217,7 @@ def addVoters(request,election_id):
                     voter.save()
         except IntegrityError:
             return HttpResponse(json.dumps({
-                'error':'Voter with id ' + voterData['id'] + 'is already in the election'
+                'error':'Voter with id ' + voterData['id'] + ' is already in the election'
                 }), content_type='application/json',status=500)
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
@@ -234,7 +234,7 @@ def addVoters(request,election_id):
             return HttpResponseForbidden("Access denied")
         if datetime.datetime.now() >= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has already started. Cannot add voters now.'}),
-             content_type='application/json', status=404)
+             content_type='application/json', status=500)
         if request.FILES:
             return addVotersFile(request,election)
         else:
@@ -463,8 +463,12 @@ def cast(request,election_id):
                         signMessage = signMessage*alpha*beta
                         random = int(randoms[question["id"]][answer["id"]])
                         if random == (int(answerData['individualProof'][0]['challenge']) + int(answerData['individualProof'][1]['challenge']))%p:
+                            print(answerData['individualProof'][0])
                             proof0 = testProof(int(answerData['individualProof'][0]['challenge']),int(answerData['individualProof'][0]['response']),g,h,p,alpha,beta,0)
+                            print(proof0)
+                            print(answerData['individualProof'][1])
                             proof1 = testProof(int(answerData['individualProof'][1]['challenge']),int(answerData['individualProof'][1]['response']),g,h,p,alpha,beta,1)
+                            print(proof1)
                             if int(answerData['individualProof'][0]['A'])==proof0[0] and int(answerData['individualProof'][0]['B'])==proof0[1] and int(answerData['individualProof'][1]['A'])==proof1[0] and int(answerData['individualProof'][1]['B'])==proof1[1]:
                                 continue
                             else:
@@ -520,9 +524,12 @@ def cast(request,election_id):
                 voter.save()
                 return render(request,"ballotBox.html",{'election':election,'questions':json.dumps(questions),'randoms':json.dumps(randoms)})
         else:
-            if datetime.datetime.now() >= election.endDate:
+            if datetime.datetime.now() >= election.endDate or datetime.datetime.now() <= election.startDate:
                 return render(request,"closedBallotBox.html",{'election':election})
-            return render(request,"register.html",{'election':election,'email':voter.email})
+            if election.publicKey:
+                return render(request,"register.html",{'election':election,'email':voter.email})
+            else:
+                return HttpResponse(json.dumps({'error':'Election does not have a public key.'}), content_type='application/json', status=404)
     else:
         return HttpResponseNotAllowed(['GET','POST'])
 
@@ -790,7 +797,7 @@ def manageTally(request,election_id):
                 paperVoterCredentials = paperVoters.values_list('publicCredential', flat=True)
                 ballots = []
                 numberOfEBallots = 0
-                for b in Ballot.objects.exclude(publicCredential__in=paperVoterCredentials).values_list('ballot', flat=True):
+                for b in Ballot.objects.filter(election=election).exclude(publicCredential__in=paperVoterCredentials).values_list('ballot', flat=True):
                     ballots.append(json.loads(b.replace('\'','"')))
                     numberOfEBallots+=1
                 finalEBallots = json.dumps({"ballotList":ballots})

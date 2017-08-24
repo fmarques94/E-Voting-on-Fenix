@@ -14,7 +14,7 @@
 {% block content %}
 <h2>{{election.name}}</h2>
 
-<form id="addTrusteeForm" action="javascript:submit('{{ csrf_token }}','{% url 'manageTrustees' election_id=election.id %}','{% url 'addTrustees' election_id=election.id %}')">
+<form id="addTrusteeForm" action="javascript:submit('{{ csrf_token }}','{% url 'manageTrustees' election_id=election.id %}','{% url 'addTrustees' election_id=election.id %}')" autocomplete="off">
     <fieldset>
         <legend><h2>Add Trustee</h2></legend>
         <b>Identifier:</b><br>

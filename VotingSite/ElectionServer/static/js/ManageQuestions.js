@@ -7,7 +7,7 @@ var answerCounter = 2;
 function addMoreAnswers(){
     answerCounter++;
     $(".inputTable").append("<tr><td><b>Answer #"+answerCounter+":</b></td>"+
-                "<td><input type=\"text\" name=\"answer_"+answerCounter+"\" required></td></tr>");
+                "<td><input type=\"text\" name=\"answer_"+answerCounter+"\" required size=\"75\"></td></tr>");
     $(".removeAnswersButton").show();
 }
 

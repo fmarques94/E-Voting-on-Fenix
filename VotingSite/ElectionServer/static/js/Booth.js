@@ -73,8 +73,6 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
             BOOTH.boothForm.html("<fieldset><p>Ballot successfully cast.</p></fieldset>")},
         error: function(xhr, ajaxOptions, thrownError){
             if(xhr){
-                $('.submitButton').css("display", "block");
-                $('.loader').css("display", "none");
                 alert('Oops: ' + xhr.responseJSON['error']);
             }else{
                 alert('Oops: An unexpected error occurred. Please contact the administrators');

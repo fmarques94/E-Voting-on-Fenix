@@ -1,3 +1,8 @@
+$(document).ready(function() {
+    $('.loader').height($('.submitButton').height());
+    $('.loader').width($('.loader').height());
+});
+
 function auditorVariable(electionPublicKey,cryptoParameters,ballot,questionList,randoms,scriptFiles){
     this.pk = electionPublicKey;
     this.cryptoParameters = cryptoParameters;
@@ -32,7 +37,6 @@ function audit(){
     vkthread.exec(param).then(function(data){
         
         $('.results').append("<h4>Ballot Formation</h4>");
-        console.log(data[1].length);
         if(data[0]){
             for(var i=0;i<(data[1]).length;i++){
                 $('.results').append("<p> Question: "+ data[1][i]["question"] +"</p>");
@@ -156,7 +160,6 @@ function checkEncryption(){
             }else{
                 var result = this.elGamal.encrypt(0,answerData["randomness"]);
             }
-            console.log(result[0].toString(10))
             if(result[0].toString(10) != answerData["alpha"] && result[1].toString(10) != answerData["beta"]){
                 return this.questionList[i]["question"]
             }
@@ -185,14 +188,30 @@ function checkProofs(){
             var individualProof = answerData["individualProof"];
             var individual_random = this.randoms[questionId][answerId];
             if(new BigInteger(individual_random,10).compareTo((new BigInteger(individualProof[0]["challenge"],10).add(new BigInteger(individualProof[1]["challenge"],10))).mod(this.p))!=0){
+                console.log("This")
                 return [false,"individual",this.questionList[i]["question"]]
             }
             for(var n=0;n<individualProof.length;n++){
                 var challenge = new BigInteger(individualProof[n]["challenge"],10)
                 var response = new BigInteger(individualProof[n]["response"],10)
                 var A = (this.g.modPow(response,this.p).multiply((alpha.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge,this.p))).mod(this.p)
-                var B = ((this.electionPublicKey.modPow(response,this.p).multiply((beta.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge,this.p))).multiply(this.g.modPow(challenge.multiply(new BigInteger(parseInt(n),10)),this.p))).mod(this.p);
+                if(n==0){
+                    var B = ((this.electionPublicKey.modPow(response,this.p).multiply(
+                    (beta.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge,this.p)
+                    )).multiply(
+                    this.g.modPow((new BigInteger('0',10).multiply(challenge)),this.p)
+                    )).mod(this.p)
+                }else{
+                    var B = ((this.electionPublicKey.modPow(response,this.p).multiply(
+                    (beta.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge,this.p)
+                    )).multiply(
+                    this.g.modPow((new BigInteger('1',10).multiply(challenge)),this.p)
+                    )).mod(this.p)
+                }
+                //var B = ((this.electionPublicKey.modPow(response,this.p).multiply((beta.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge,this.p))).multiply(this.g.modPow(challenge.multiply(new BigInteger(parseInt(n),10)),this.p))).mod(this.p);
                 if(A.toString(10) != individualProof[n]["A"] || B.toString(10) != individualProof[n]["B"]){
+                    console.log(B.toString(10));
+                    console.log(individualProof[n]["B"]);
                     return [false,"individual",this.questionList[i]["question"]]
                 }
             }
@@ -207,8 +226,20 @@ function checkProofs(){
             var challenge = new BigInteger(overallProof[n]["challenge"],10)
             var response = new BigInteger(overallProof[n]["response"],10)
             var A = (this.g.modPow(response,this.p).multiply((totalAlpha.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge,this.p))).mod(this.p)
-            var B = ((this.electionPublicKey.modPow(response,this.p).multiply((totalBeta.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge,this.p))).multiply(this.g.modPow(challenge.multiply(new BigInteger(parseInt(n),10)),this.p))).mod(this.p);
-            if(A.toString(10) != overallProof[n]["A"] && B.toString(10) != overallProof[n]["B"]){
+            if(n==0){
+                var B = ((this.electionPublicKey.modPow(response,this.p).multiply(
+                (totalBeta.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge,this.p)
+                )).multiply(
+                this.g.modPow((new BigInteger('0',10).multiply(challenge)),this.p)
+                )).mod(this.p)
+            }else{
+                var B = ((this.electionPublicKey.modPow(response,this.p).multiply(
+                (totalBeta.modPow(this.p.subtract(new BigInteger('2',10)),this.p)).modPow(challenge,this.p)
+                )).multiply(
+                this.g.modPow((new BigInteger('1',10).multiply(challenge)),this.p)
+                )).mod(this.p)
+            }
+            if(A.toString(10) != overallProof[n]["A"] || B.toString(10) != overallProof[n]["B"]){
                 return [false,"overal",this.questionList[i]["question"]]
             }
         }
