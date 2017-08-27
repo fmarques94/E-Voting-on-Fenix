@@ -6,6 +6,15 @@ $(document).ready(function() {
     $('.loader').width($('.loader').height());
 });
 
+function togglePaperVoterList(){
+    $(".VoterList").toggle();
+    if($(".VoterList").is(':hidden')){
+        $("#toggleButton").text('Show Paper Voters List')
+    }else{
+        $("#toggleButton").text('Hide Paper Voters List')
+    }
+}
+
 function addPaperResuls(){
     $('.manageTallyContent').html(
 
@@ -50,7 +59,7 @@ function showNextQuestion(){
 }
 
 function sendPaperResults(){
-    $('#submitPaperResultsButton').css("display", "none");
+    $('#submitPaperResultsButton').hide();
     $('.loader').css("display", "block");
     url = window.location.toString();
     requestUrl = url.replace(currentUrl, paperResultsUrl);
@@ -64,11 +73,11 @@ function sendPaperResults(){
         window.location.reload();},
     error: function(xhr, ajaxOptions, thrownError){
         if(xhr){
-            $('#submitPaperResultsButton').css("display", "block");
+            $('#submitPaperResultsButton').show();
             $('.loader').css("display", "none");
             alert('Oops: ' + xhr.responseJSON['error']);
         }else{
-            $('#submitPaperResultsButton').css("display", "block");
+            $('#submitPaperResultsButton').show();
             $('.loader').css("display", "none");
             alert('Oops: An unexpected error occurred. Please contact the administrators');
         }
@@ -80,7 +89,7 @@ function sendPaperResults(){
 }
 
 function paperVotersSubmit(token,currentUrl,redirectUrl){
-    $('#submitPaperVoterButton').css("display", "none");
+    $('#submitPaperVoterButton').hide();
     $('.loader').css("display", "block");
     filename = $('#addPaperVoterForm input:file[name=csv]').val();
     if(filename.substr(filename.length - 4, 4).toLowerCase() != '.csv'){
@@ -105,11 +114,11 @@ function paperVotersSubmit(token,currentUrl,redirectUrl){
     error: function(xhr, ajaxOptions, thrownError){
         if(xhr){
             alert('Oops: ' + xhr.responseJSON['error']);
-            $('#submitPaperVoterButton').css("display", "block");
+            $('#submitPaperVoterButton').show();
             $('.loader').css("display", "none");
         }else{
             alert('Oops: An unexpected error occurred. Please contact the administrators');
-            $('.#submitPaperVoterButton').css("display", "block");
+            $('.#submitPaperVoterButton').show();
             $('.loader').css("display", "none");
         }
     },
@@ -149,7 +158,7 @@ function removePaperVoter(token,currentUrl,redirectUrl,voterId){
 
 function aggregateEncTally(token,currentUrl,redirectUrl){
 
-    $('.button').css("display", "none");
+    $('.button').hide();
     $('.loader').css("display", "block");
 
     var scriptFiles = []
@@ -209,11 +218,11 @@ function aggregateEncTally(token,currentUrl,redirectUrl){
         error: function(xhr, ajaxOptions, thrownError){
             if(xhr){
                 alert('Oops: ' + xhr.responseJSON['error']);
-                $('.button').css("display", "block");
+                $('.button').show();
                 $('.loader').css("display", "none");
             }else{
                 alert('Oops: An unexpected error occurred. Please contact the administrators');
-                $('.button').css("display", "block");
+                $('.button').show();
                 $('.loader').css("display", "none");
             }
         },
@@ -226,7 +235,7 @@ function aggregateEncTally(token,currentUrl,redirectUrl){
 var lookup;
 
 function publishResults(token,currentUrl,redirectUrl){
-    $('.button').css("display", "none");
+    $('.button').hide();
     $('.loader').css("display", "block");
     var scriptFiles = []
     var scripts = document.getElementsByClassName("import")
@@ -270,11 +279,11 @@ function publishResults(token,currentUrl,redirectUrl){
                     error: function(xhr, ajaxOptions, thrownError){
                         if(xhr){
                             alert('Oops: ' + xhr.responseJSON['error']);
-                            $('.button').css("display", "block");
+                            $('.button').show();
                             $('.loader').css("display", "none");
                         }else{
                             alert('Oops: An unexpected error occurred. Please contact the administrators');
-                            $('.button').css("display", "block");
+                            $('.button').show();
                             $('.loader').css("display", "none");
                         }
                     },

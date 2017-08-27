@@ -725,6 +725,9 @@ def bulletinBoard(request,election_id):
                     keyshares[t.identifier] = json.loads(t.publicKeyShare.replace('\'','"'))
         voters = {}
         for voter in Voter.objects.filter(election=election):
+            if voter.paperVoter:
+                voters[voter.identifier] = "paper Voter"
+                continue
             if voter.publicCredential:
                 try:
                     ballot = Ballot.objects.get(election=election,publicCredential=voter.publicCredential)
@@ -1027,14 +1030,20 @@ def publishResults(request,election_id):
             return HttpResponse(json.dumps({'error':'The election has not ended. Cannot submit election tally.'}),content_type='application/json', status=404)
         try:
             data = json.loads(request.body.decode('utf-8'))
-            print(data)
+            paperVoters = Voter.objects.filter(election=election,paperVoter=True)
+            paperVoterCredentials = paperVoters.values_list('publicCredential', flat=True)
+            NumberEVoters = Ballot.objects.filter(election=election).exclude(publicCredential__in=paperVoterCredentials) 
             questions = getQuestionsAux(election)
             for question in questions["questionList"]:
+                numberOfVotes = 0
                 if question["id"] not in data.keys():
                     return HttpResponse(json.dumps({'error':'Results not well formed.'}), content_type='application/json', status=500)
                 for answer in question["answers"]:
                     if answer["id"] not in data[question["id"]][1].keys():
                         return HttpResponse(json.dumps({'error':'Results not well formed.'}), content_type='application/json', status=500)
+                    numberOfVotes = numberOfVotes + int(data[question["id"]][1][answer["id"]][1])
+                if (len(NumberEVoters)+len(paperVoters))!=numberOfVotes:
+                    return HttpResponse(json.dumps({'error':'Results are invalid. Different number of voters and votes'}), content_type='application/json', status=500)
             election.tally = data
             election.save()
             return HttpResponse(json.dumps({
