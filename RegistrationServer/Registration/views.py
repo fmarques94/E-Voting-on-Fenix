@@ -15,6 +15,12 @@ from Registration.models import Credential
 #Crypto
 from Registration.Crypto import Schnorr
 
+
+#
+# Method: POST
+# Function: creates the schnorr credentials and send them to the voter by email. it also sends the public credential to 
+# the voting sever. it checks that public credentials are not duplicated for an election.
+#
 def createCredentials(request):
     if request.method=='POST':
         try:
@@ -61,6 +67,10 @@ def createCredentials(request):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+#
+# Method: POST
+# Function: Adds an election to the registration server.
+#
 def addElection(request):
     if request.method=='POST':
         try:
