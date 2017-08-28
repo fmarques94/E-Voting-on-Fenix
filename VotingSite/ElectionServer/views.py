@@ -135,8 +135,6 @@ def createElection(request):
     else:
         return HttpResponseNotAllowed(['POST','GET'])
 
-#########################################################################################################################
-
 #
 # Method: POST
 # Function: Adds trustee to elections. Trustees cannot be added after the election has started.
@@ -156,7 +154,7 @@ def addTrustees(request,election_id):
                 return HttpResponseForbidden("Access denied")
             if datetime.datetime.now() >= election.startDate:
                 return HttpResponse(json.dumps({'error':'The election has already started. Cannot add trustees now.'}),
-             content_type='application/json', status=404)
+             content_type='application/json', status=500)
             data = json.loads(request.body.decode('utf-8'))
             with transaction.atomic():
                 for trusteeData in data['trusteeList']:
@@ -195,7 +193,7 @@ def removeTrustees(request,election_id):
             return HttpResponseForbidden("Access denied")
         if datetime.datetime.now() >= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has already started. Cannot remove trustees now.'}),
-             content_type='application/json', status=404)
+             content_type='application/json', status=500)
         try:
             data = json.loads(request.body.decode('utf-8'))
             for trusteeData in data['trusteeList']:
@@ -228,7 +226,6 @@ def getTrustees(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET'])
 
-######################################################################################################################
 
 #
 # Method: POST
@@ -301,7 +298,12 @@ def addVoters(request,election_id):
     else:
         return HttpResponseNotAllowed(['POST'])
 
-
+#
+# Method: POST
+# Function: Removes voters from the election. Can only be done by the admin and before the election starts.
+# It receives a json with a list with voter ids. The key of the list is voterList. If the voter does not exist it 
+# simply ignores it. In case of error it responds with a error 500. 
+#
 @login_required
 @csrf_exempt
 def removeVoters(request,election_id):
@@ -314,7 +316,7 @@ def removeVoters(request,election_id):
             return HttpResponseForbidden("Access denied")
         if datetime.datetime.now() >= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has already started. Cannot remove voters now.'}),
-             content_type='application/json', status=404)
+             content_type='application/json', status=500)
         try:
             data = json.loads(request.body.decode('utf-8'))
             for voterData in data['voterList']:
@@ -329,6 +331,10 @@ def removeVoters(request,election_id):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+#
+# Method: GET
+# Function: Return a list of voters for a specific election in json format.
+#
 @login_required
 def getVoters(request,election_id):
     if request.method == 'GET':
@@ -341,8 +347,15 @@ def getVoters(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET'])
 
-####################################################################################################################
-
+#
+# Method: POST
+# Function: Adds questions and anwers to the election. This can only be done by the admin of the election and before the 
+# election begins. If the election does not exist it returns a 404 error. It receives a json with a list of questions with
+# the key questionList. This list contains a dictionary for each question with key question that has the question text and
+# a list of answers with the key answers. For each answer and each question a uuid is created in order to identify these.
+# The same question for a election or the same answer for a question is not allowed and the changes to the database are rollback.
+# In case of error the server responds with a 500.
+#
 @login_required
 @csrf_exempt
 def addQuestions(request,election_id):
@@ -355,7 +368,7 @@ def addQuestions(request,election_id):
             return HttpResponseForbidden("Access denied")
         if datetime.datetime.now() >= election.startDate:
             return HttpResponse(json.dumps({'error':'The election has already started. Cannot add questions now.'}),
-             content_type='application/json', status=404)
+             content_type='application/json', status=500)
         try:
             data = json.loads(request.body.decode('utf-8'))
             with transaction.atomic():
@@ -376,7 +389,13 @@ def addQuestions(request,election_id):
         return HttpResponse(json.dumps({'success':True}), content_type='application/json')      
     else:
         return HttpResponseNotAllowed(['POST'])
-
+#
+# Method: POST
+# Function: Removes questions from the election. Can only be done by the admin and before the election begins.
+# In case the question doesn't exist it just ignores the request. It receives a json with a list of the uuid of the questions.
+# The answers for the question are deleted in cascade from the database. In case of error it responds with a 500.
+#
+#
 @login_required
 @csrf_exempt
 def removeQuestions(request,election_id):
@@ -402,6 +421,10 @@ def removeQuestions(request,election_id):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+#
+# Method: GET
+# Function: Return a json representation of the questions and answers for a specific election.
+#
 @login_required
 def getQuestions(request,election_id):
     if request.method == 'GET':
@@ -415,7 +438,15 @@ def getQuestions(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET'])
 
-#############################################################################################################################
+#
+# Method: GET
+# Function: Requests the credential authority for credentials. Can only be used by eligible voters.
+# If the election doesn't exist or the request came from someone who isn't a voter it return a 404.
+# Can only be done before the election ends and after the election starts. It send a post request to the 
+# credential authority with a json containing the election id, the election name, the election cryptographic parameteres
+# and the voter id and email. If the credential authority responds correctly it adds the public credential to the voter model,
+# otherwise it responds with the same error as the credential authority. Any other error that occurs is responded with 500.
+#
 @login_required
 def register(request,election_id):
     if request.method == 'GET':
@@ -428,9 +459,9 @@ def register(request,election_id):
         except Voter.DoesNotExist:
             return HttpResponse(json.dumps({'error':'Voter is not eligible for this election'}),
              content_type='application/json', status=404)
-        if datetime.datetime.now() >= election.endDate:
-            return HttpResponse(json.dumps({'error':'The election has ended'}),
-             content_type='application/json', status=404)
+        if datetime.datetime.now() >= election.endDate or datetime.datetime.now()< election.startDate:
+            return HttpResponse(json.dumps({'error':'The election is not currently running.'}),
+             content_type='application/json', status=500)
         try:
             cryptoParameters = json.loads(election.cryptoParameters.replace('\'','"'))
             payload = {
@@ -454,7 +485,24 @@ def register(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET'])
 
-##############################################################################################################################
+#
+# Common: If the election doesn't exist or the user is not an eligible voter it responds with a 404 error.
+# Method: GET
+# Function: If the election is not running it responds with a closed ballot box. If the election has timed ballot boxes then
+# it responds with a closed ballot box every time except between the correct interval. If the voter doesn't have a public credential
+# it renders a register page where the voter can register to vote electronically. If the voter has the public credential the ballot box
+# is rendered with all the information necessary in order to create the ballot even in offline mode. A group of random numbers are also generated
+# and saved in order to compute the proofs of the ballot.
+# Method: POST
+# Function: Once again it verifies the time in order to see if it is legal to cast the vote. It verifies if 
+# the ballots contains every question and a value for every answer of the election. It then checks the public credential
+# received on the ballot and compares it with the public credential of the voter. It verifies every proof of the ballot and the 
+# signature present. In case of failure in any of these it responds with a 500 error. Otherwise the ballot is saved.
+# A ballot is formed as following: There are two main keys, the publicCredential that has the public credential of the voter
+# and the ballot. The ballot is a dictionary where each key is the uuid of a question. The value with another dictionary with the key answer,
+# and another with the overall_proof. In the answers there are dictionary with each key a uuid of the answer and in that the encrytion and individual answer.
+#
+
 @login_required
 @csrf_exempt
 def cast(request,election_id):
@@ -592,11 +640,19 @@ def cast(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET','POST'])
 
+#
+# Auxiliary function to calculate the proof parameters
+#
 def testProof(challenge,response,g,h,p,alpha,beta,message):
     A = (pow(g,response,p)*pow(pow(alpha,p-2,p),challenge,p))%p
     B = (pow(h,response,p) * pow(pow(beta,p-2,p),challenge,p) * pow(g,(message*challenge),p))%p
     return A,B
 
+#
+# Method: GET
+# Function: Render the page of the management of the election. if the election has ended then a button to manage the tally is 
+# also rendered.
+#
 @login_required
 def election(request,election_id):
     if request.method == 'GET':
@@ -614,6 +670,11 @@ def election(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET'])
 
+#
+# Method: GET
+# Function: Renders the page to manage the trustees. Also displays a lisr of the trustees and their key share.
+# This page also allows the admin to aggregate the public key
+#
 @login_required
 def manageTrustees(request,election_id):
     if request.method == 'GET':
@@ -633,6 +694,10 @@ def manageTrustees(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET'])
 
+#
+# Method: GET
+# Function: Renders the page to manage the voters. It also displays a list of all the eligible voters.
+#
 @login_required
 def manageVoters(request,election_id):
     if request.method == 'GET':
@@ -646,6 +711,10 @@ def manageVoters(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET'])
 
+#
+# Method:GET
+# Function: Renders the page to manage the questions. It also displays a list of all the questions and answers.
+#
 @login_required
 def manageQuestions(request,election_id):
     if request.method == 'GET':
@@ -659,6 +728,13 @@ def manageQuestions(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET'])
 
+#
+# Method: GET
+# Function: Renders the page for the trustees to generate a key share and to partial decrypt the tally depending on the stage of
+# the election.
+# Method: POST
+# Function: Allows the trustee to input a key share for the key generation protocol.
+#
 @login_required
 def trustee(request,election_id):
 
@@ -732,6 +808,10 @@ def trustee(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET','POST'])
 
+#
+# Method: GET
+# Function: Renders a list of all the elections where the user is a trustee.
+#
 @login_required
 def trusteeElectionList(request):
     if request.method == 'GET':
@@ -739,7 +819,11 @@ def trusteeElectionList(request):
         return render(request,'trusteeElectionList.html',{'trustee':t})
     else:
         return HttpResponseNotAllowed(['GET'])
-
+#
+# Method: POST
+# Function: Allows for the election admin to post the election public key. It can only be accessed before the election starts
+# It receives a json with a key pk whose value is the public key.
+#
 @login_required
 def addElectionPublicKey(request,election_id):
     if request.method == 'POST':
@@ -770,6 +854,11 @@ def addElectionPublicKey(request,election_id):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+#
+# Method: GET
+# Function: Renders the bulletin board. Here voters can check for the election information, can check their SBT and the trustees
+# public key share.
+#
 @login_required
 def bulletinBoard(request,election_id):
     if request.method == 'GET':
@@ -808,6 +897,11 @@ def bulletinBoard(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET'])
 
+#
+# Method: GET
+# Function: Renders the page which allows to audit a ballot. It passes all the information necessary in order for the audit
+# to run offline if needed.
+#
 @login_required
 def auditBallot(request,election_id):
     if request.method == 'GET':
@@ -830,6 +924,9 @@ def auditBallot(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET'])
 
+#
+# Auxiliary function which return a dictionary with all the questions and answers of an election, including their ids.
+#
 def getQuestionsAux(election):
     data = {"questionList":[]}
     for question in Question.objects.all().filter(election=election):
@@ -844,7 +941,13 @@ def getQuestionsAux(election):
                 })
         data["questionList"].append(questionData)
     return data
-
+#
+# Method: GET
+# Function: Renders the page in order to manage the tally. if the election has paper votes it first request that the admin
+# input the paper voters and paper results. After that, or if it didn't have paper votes, the admin can create the aggregated encrypted tally.
+# Finally after all the trustees have made their partial decryptions it allows the admin to aggregate these a publish them.
+# This is only accessible after the election has ended.
+#
 @login_required
 def manageTally(request,election_id):
     if request.method == 'GET':
@@ -874,10 +977,6 @@ def manageTally(request,election_id):
                         p["randoms"] = json.loads(t.decryptionProofRandom.replace('\'','"'))
                         partialDecryptions["partialDecryptionList"].append(p)
                         numberOfPartialeDecryptions+=1
-                #for partial in trustees.values_list('partialDecryption', flat=True):
-                #    if partial:
-                #        partialDecryptions["partialDecryptionList"].append(json.loads(partial.replace('\'','"')))
-                #        numberOfPartialeDecryptions+=1
                 return render(request,'manageTally.html',{
                     'election':election,
                     'paperVoters':paperVotersIdentifiers,
@@ -897,6 +996,11 @@ def manageTally(request,election_id):
     else:
         return HttpResponseNotAllowed(['GET'])
 
+#
+# Method: POST
+# Function: Works similiar to how we add the eligible voters. The request now only needs the ids. And can only be accessed 
+# when the election has ended.
+#
 @login_required
 def addPaperVoters(request,election_id):
 
@@ -938,6 +1042,10 @@ def addPaperVoters(request,election_id):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+#
+# Method: POST
+# Function: Works in a similiar way to the remove of eligible voters.
+#
 @login_required
 @csrf_exempt
 def removePaperVoters(request,election_id):
@@ -967,6 +1075,12 @@ def removePaperVoters(request,election_id):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+#
+# Method: POST
+# Function: Receives the paper results of the election. The json keys are made up of the questions and answers uuid.
+# If the number of paper votes doesn't add up with the number of votes for each question then a error is returned.
+# This function can only be accessed at the end of the election and by the administrator. 
+#
 @login_required
 def submitPaperResults(request,election_id):
     if request.method == 'POST':
@@ -1005,6 +1119,13 @@ def submitPaperResults(request,election_id):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+#
+# Method: POST
+# Function: Allows to submit the aggregated encrypted tally. It verifies that all the ids of the questions and answers
+# for that election are present. Can only be accessed after the election has ended and by the administrator.
+# If the paper results have not been published and the election is hybrid then it asks that the administator input the 
+# paper results first.
+#
 @login_required
 def submitEncryptedTally(request,election_id):
     if request.method == 'POST':
@@ -1039,6 +1160,11 @@ def submitEncryptedTally(request,election_id):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+#
+# Method: POST
+# Function: Allows each of the trustees to submit a partial decryption. This can only be done after the election has ended
+# if an aggregated encrypted tally has been computed and if the trustee participated in the election key generation protocol.
+#
 @login_required
 def submitPartialDecryption(request,election_id):
     if request.method == 'POST':
@@ -1076,6 +1202,12 @@ def submitPartialDecryption(request,election_id):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+#
+# Method: POST
+# Function: Allows for the administator to publish the election results. Can only be accessed at the end of the election.
+# the published results must contain an id for each question and answer and the total number of votes must be equal to ~
+# the number of paper voters and the number of e-ballots of non paper votes.
+#
 @login_required
 def publishResults(request,election_id):
     if request.method == 'POST':
@@ -1113,6 +1245,11 @@ def publishResults(request,election_id):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+#
+# Method: POST
+# Function: Deletes an election. Can only be accessed by the election administrator. This deletes the election and all the data
+# which belongs to it.
+#
 @login_required
 def deleteElection(request,election_id):
     if request.method == 'POST':
