@@ -32,27 +32,58 @@ from ElectionServer.models import Ballot
 from ElectionServer.Crypto.ParameterGenerator import generate_parameters
 from ElectionServer.Crypto import Schnorr
 
+
+#
+# Method: GET
+# Function: Renders home page. If the user is a authorized admin then the create election button is also rendered.
+#
 def home(request):
     return render(request,'home.html',{'admin':str(request.user) in settings.AUTHORIZED_ADMINS})
-
+#
+# Method: GET
+# Function: Makes connection with Oauth in order to allow login through Fenix.
+#
 def login(request):
     return render(request,'login.html')
 
+#
+# Method: GET
+# Function: Displays a list of all elections, taking a user to the bulletin board.
+#
 def elections(request):
     context = {'elections': Election.objects.all()}
     return render(request,'elections.html',context)
 
+#
+# Method: GET
+# Function: Displays a list of all elections the user can manage, taking him to the management page.
+#
 @login_required
 def manageElections(request):
     context = {'elections': Election.objects.filter(admin=request.user)}
     return render(request,'manageElections.html',context)
 
+#
+# Method: GET
+# Function: Returns a JSON with all elections.
+#
 def getElections(request):
     if request.method == 'GET':
         data = serializers.serialize('json',list(Election.objects.all()))
         return HttpResponse(data,content_type='application/json')
     else:
         return HttpResponseNotAllowed(['GET'])
+
+#
+# Method: GET
+# Function: Return a page with a form for the creation of the election
+# Method: POST
+# Function: Receives a json with the name, description, a boolean which dictates if there are going to be paper votes,
+#two dateTime which correspond to the start and end date of the election and optionally two times which correspond to
+#the time which the Ballot Box can be open. It creates the election cryptographic parameters and a uuid which identifies
+#the election. It also informs the credential authority of the new election which was created. If something goes wrong 
+#it responds with a error 500. If everything goes well, it saves the data in the database and responds with a sucess 200.
+#
 
 @login_required
 @csrf_exempt
@@ -106,6 +137,15 @@ def createElection(request):
 
 #########################################################################################################################
 
+#
+# Method: POST
+# Function: Adds trustee to elections. Trustees cannot be added after the election has started.
+# Receives a json with a list of dictionaries with the key trusteeList. Each dictionary
+# has the id, name and email of the trustee. It receives the election_id trought the url. If the user who requested it is not the 
+# election admin then it gives a forbidden error. In case the election does not exist it gives a 404 error. If the trustee is already
+# present in the election it gives a 500 error which informs of such. Any other excepption is caught and sent as 500 error.
+#
+
 @login_required
 @csrf_exempt
 def addTrustees(request,election_id):
@@ -131,13 +171,18 @@ def addTrustees(request,election_id):
             return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
         except IntegrityError:
             return HttpResponse(json.dumps({'error':'Trustee '+ trusteeData['id'] + ' already present'})
-            , content_type='application/json', status=404)
+            , content_type='application/json', status=500)
         except Exception as exception:
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
     else:
         return HttpResponseNotAllowed(['POST'])
 
-
+#
+# Method: POST
+# Function: Removes trustees from the election. Trustees cannot be removed after the election has started and can only be 
+# done so by the election admin. It receives a json with the list of ids of trustees with the key trusteeList. if a id doesn't
+# correspond to a trustee it just ignores it, otherwise it removes it. Any other error is returned with error 500.
+#
 @login_required
 @csrf_exempt
 def removeTrustees(request,election_id):
@@ -165,6 +210,12 @@ def removeTrustees(request,election_id):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+
+#
+# Method: GET
+# Function: Return a Json with the information of all the trustees for a specific election. If the election does not exist
+# it returns a 404 error.
+#
 @login_required
 def getTrustees(request,election_id):
     if request.method == 'GET':
@@ -179,6 +230,14 @@ def getTrustees(request,election_id):
 
 ######################################################################################################################
 
+#
+# Method: POST
+# Function: This can either receive a csv file or a json. This allows the possibility of adding a large number of voters
+# using a csv. In case of Json it receives a list of dictionaries with the key voterList and each dictionary has the id and email
+# of the voter. Similar the csv file has the id and email seperated by ;. In case of error the changes to the database are rolled back
+# and the server responds with a 500. It also verifies that a voter is not added more than once. This can only be done by the
+# election admin. It also only allows the addition on voters while the election does not begin.
+#
 @login_required
 def addVoters(request,election_id):
 
