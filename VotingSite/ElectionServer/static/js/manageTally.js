@@ -156,7 +156,7 @@ function removePaperVoter(token,currentUrl,redirectUrl,voterId){
     });
 }
 
-function aggregateEncTally(token,currentUrl,redirectUrl){
+/*function aggregateEncTally(token,currentUrl,redirectUrl){
 
     $('.button').hide();
     $('.loader').css("display", "block");
@@ -229,6 +229,34 @@ function aggregateEncTally(token,currentUrl,redirectUrl){
         dataType: "json",
         contentType : "application/json",
         });
+    });
+}*/
+
+function aggregateEncTally(token,currentUrl,redirectUrl){
+    $('.button').hide();
+    $('.loader').css("display", "block");
+    url = window.location.toString();
+    requestUrl = url.replace(currentUrl, redirectUrl);
+    $.ajaxSetup({headers: { "X-CSRFToken": token }});
+    console.log('Seding request now!');
+    $.ajax({
+    type: "GET",
+    url: requestUrl,
+    success: function(msg){
+        window.location.reload();},
+    error: function(xhr, ajaxOptions, thrownError){
+        if(xhr){
+            alert('Oops: ' + xhr.responseJSON['error']);
+            $('.button').show();
+            $('.loader').css("display", "none");
+        }else{
+            alert('Oops: An unexpected error occurred. Please contact the administrators');
+            $('.button').show();
+            $('.loader').css("display", "none");
+        }
+    },
+    dataType: "json",
+    contentType : "application/json",
     });
 }
 

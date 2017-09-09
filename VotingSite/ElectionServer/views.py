@@ -117,7 +117,10 @@ def createElection(request):
                     "g":str(parameters['g'])
                 }
                 election.save()
-                r = requests.post(settings.CREDENTIAL_AUTHORITY+"/addElection/",data=json.dumps({'election':{'id':str(election.id),'endDate':election.endDate}}))
+                try:
+                    r = requests.post(settings.CREDENTIAL_AUTHORITY+"/addElection/",data=json.dumps({'election':{'id':str(election.id),'endDate':election.endDate}}))
+                except Exception as exception:
+                    return HttpResponse(json.dumps({'error':"Failed connection to credential authority"}), content_type='application/json', status=500)
                 if r.status_code!=200:
                     raise Exception('Got error code ' + str(r.status_code) + ' from registration server')
             return HttpResponse(json.dumps({
@@ -981,7 +984,7 @@ def manageTally(request,election_id):
                     'election':election,
                     'paperVoters':paperVotersIdentifiers,
                     'questions':json.dumps(getQuestionsAux(election)),
-                    'finalBallots':finalEBallots,
+                    #'finalBallots':finalEBallots,
                     'p':cryptoParameters['p'],
                     'g':cryptoParameters['g'],
                     'trustees':trustees,
@@ -990,7 +993,7 @@ def manageTally(request,election_id):
                     'ready':numberOfPartialeDecryptions == len(trustees.values_list('publicKeyShare', flat=True))
                 })
             else:
-                return HttpResponseForbidden("Election has not yet ended. Cannot manage paper votes without election ending.")
+                return HttpResponseForbidden("Election has not yet ended. Cannot manage tally without election ending.")
         else:
             return HttpResponseForbidden("Access denied")
     else:
@@ -1121,47 +1124,6 @@ def submitPaperResults(request,election_id):
 
 #
 # Method: POST
-# Function: Allows to submit the aggregated encrypted tally. It verifies that all the ids of the questions and answers
-# for that election are present. Can only be accessed after the election has ended and by the administrator.
-# If the paper results have not been published and the election is hybrid then it asks that the administator input the 
-# paper results first.
-#
-@login_required
-def submitEncryptedTally(request,election_id):
-    if request.method == 'POST':
-        try:
-            election = Election.objects.get(id=election_id)
-        except Election.DoesNotExist:
-            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
-        if request.user != election.admin:
-            return HttpResponseForbidden("Access denied")
-        if datetime.datetime.now() <= election.endDate:
-            return HttpResponse(json.dumps({'error':'The election has not ended. Cannot submit encrypted tally.'}),
-             content_type='application/json', status=404)
-        if election.hybrid and not election.paperResults:
-            return HttpResponse(json.dumps({'error':'First the paper results must be submitted.'}),
-             content_type='application/json', status=404)
-        try:
-            data = json.loads(request.body.decode('utf-8'))
-            questions = getQuestionsAux(election)
-            for question in questions["questionList"]:
-                if question["id"] not in data.keys():
-                    return HttpResponse(json.dumps({'error':'Encrypted tally not well formed.'}), content_type='application/json', status=500)
-                for answer in question["answers"]:
-                    if answer["id"] not in data[question["id"]].keys():
-                        return HttpResponse(json.dumps({'error':'Encrypted tally not well formed.'}), content_type='application/json', status=500)
-            election.aggregatedEncTally = data
-            election.save()
-            return HttpResponse(json.dumps({
-                'success':True
-                }),content_type='application/json')
-        except Exception as exception:
-            return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
-    else:
-        return HttpResponseNotAllowed(['POST'])
-
-#
-# Method: POST
 # Function: Allows each of the trustees to submit a partial decryption. This can only be done after the election has ended
 # if an aggregated encrypted tally has been computed and if the trustee participated in the election key generation protocol.
 #
@@ -1268,3 +1230,58 @@ def deleteElection(request,election_id):
             return HttpResponse(json.dumps({'error':repr(exception)}), content_type='application/json', status=500)
     else:
         return HttpResponseNotAllowed(['POST'])
+
+#
+# Method: GET
+# Function: Aggregates the encrypted tally.
+#
+
+@login_required
+def aggregateEncTally(request,election_id):
+    if request.method == 'GET':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        if request.user != election.admin:
+            return HttpResponseForbidden("Access denied")
+        if datetime.datetime.now() >= election.endDate:
+            paperVoters = Voter.objects.filter(election=election,paperVoter=True)
+            paperVoterCredentials = paperVoters.values_list('publicCredential', flat=True)
+            ballots = []
+            numberOfEBallots = 0
+            for b in Ballot.objects.filter(election=election).exclude(publicCredential__in=paperVoterCredentials).values_list('ballot', flat=True):
+                ballots.append(json.loads(b.replace('\'','"')))
+                numberOfEBallots+=1
+            questions = getQuestionsAux(election)
+            result = {}
+            p = int(json.loads(election.cryptoParameters.replace('\'','"'))["p"])
+            for question in questions["questionList"]:
+                result[question['id']] = {}
+                for answer in question["answers"]:
+                    for ballot in ballots:
+                        ballotAnswer = ballot[question["id"]]["answers"][answer["id"]]
+                        if answer["id"] in result[question['id']]:
+                            alpha = result[question['id']][answer['id']]["alpha"]
+                            beta = result[question['id']][answer['id']]["beta"]
+                            aux = {
+                                "alpha": (alpha*int(ballotAnswer['alpha']))%p,
+                                "beta": (beta*int(ballotAnswer['beta']))%p
+                            }
+                        else:
+                            aux = {
+                                "alpha": int(ballotAnswer['alpha']),
+                                "beta": int(ballotAnswer['beta'])
+                            }
+                        result[question['id']][answer['id']] = aux
+                    result[question['id']][answer['id']]["alpha"] = str(result[question['id']][answer['id']]["alpha"])
+                    result[question['id']][answer['id']]["beta"] = str(result[question['id']][answer['id']]["beta"])
+            election.aggregatedEncTally = json.dumps(result)
+            election.save()
+            return HttpResponse(json.dumps({
+                'success':True
+                }),content_type='application/json')
+        else:
+            return HttpResponseForbidden("Election has not yet ended. Cannot manage tally without election ending.")
+    else:
+        return HttpResponseNotAllowed(['GET'])

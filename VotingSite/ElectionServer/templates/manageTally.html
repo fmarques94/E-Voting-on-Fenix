@@ -16,8 +16,6 @@
     {% if election.hybrid and not election.aggregatedEncTally and not election.paperResults%}
     var paperResultsUrl = "{% url 'submitPaperResults' election_id=election.id %}"
     {% elif not election.hybrid and not election.aggregatedEncTally or election.hybrid and not election.aggregatedEncTally and election.paperResults %}
-    console.log("Here")
-    var ballots = JSON.parse("{{finalBallots|escapejs}}")['ballotList'];
     var pValue = "{{p}}"
     {% elif election.aggregatedEncTally and partialDecryptions %}
     var pValue = "{{p}}"
