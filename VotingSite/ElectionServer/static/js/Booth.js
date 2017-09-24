@@ -108,8 +108,10 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
             var beta = new BigInteger('1',10);
             var random = new BigInteger('0',10);
             var encAnswers = {}
+			var encAnswersClone = {};
             for(var j=0;j<currentQuestion["answers"].length;j++){
                 encAnswers[currentQuestion["answers"][j]["id"]] = {}
+				encAnswersClone[currentQuestion["answers"][j]["id"]] = {}
                 if(j==answerIndex){
                     result = this.elGamal.encrypt(1);
                     var message = 1;
@@ -118,10 +120,14 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
                     var message = 0;
                 }
                 encAnswers[currentQuestion["answers"][j]["id"]]['alpha'] = result[0].toString(10);
+				encAnswersClone[currentQuestion["answers"][j]["id"]]['alpha'] = result[0].toString(10);
                 encAnswers[currentQuestion["answers"][j]["id"]]['beta'] = result[1].toString(10);
+				encAnswersClone[currentQuestion["answers"][j]["id"]]['beta'] = result[1].toString(10);
                 encAnswers[currentQuestion["answers"][j]["id"]]['randomness'] = result[2].toString(10);
                 var randomNumber = new BigInteger(this.randoms[currentQuestion["id"]][currentQuestion["answers"][j]["id"]],10)
-                encAnswers[currentQuestion["answers"][j]["id"]]['individualProof'] = this.generateProof(message,result,randomNumber);
+				var proof = this.generateProof(message,result,randomNumber);
+                encAnswers[currentQuestion["answers"][j]["id"]]['individualProof'] = proof;
+				encAnswersClone[currentQuestion["answers"][j]["id"]]['individualProof'] = proof;
                 hash = hash.multiply(result[0])
                 hash = hash.multiply(result[1])
                 alpha = alpha.multiply(result[0]);
@@ -129,8 +135,6 @@ function Booth(electionPublicKey,cryptoParameters,credentials,questionList,booth
                 random = random.add(result[2]);
             }
             this.ballot[Object.keys(this.ballot)[i]]["answers"] = encAnswers;
-            var encAnswersClone = Object.assign({}, encAnswers);
-            delete encAnswersClone['randomness'];
             this.ballotToSend[Object.keys(this.ballot)[i]]["answers"] = encAnswersClone;
             var overall_random = new BigInteger(this.randoms[currentQuestion["id"]]["overall"],10)
             var proof = this.generateProof(1,[alpha,beta,random],overall_random)
