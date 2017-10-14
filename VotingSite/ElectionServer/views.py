@@ -1285,3 +1285,52 @@ def aggregateEncTally(request,election_id):
             return HttpResponseForbidden("Election has not yet ended. Cannot manage tally without election ending.")
     else:
         return HttpResponseNotAllowed(['GET'])
+
+
+#
+# Method: GET
+# Function: Exports data at the end of the election in order for the voters to do the verification.
+#
+
+def exportData(request,election_id):
+    if request.method == 'GET':
+        try:
+            election = Election.objects.get(id=election_id)
+        except Election.DoesNotExist:
+            return HttpResponse(json.dumps({'error':'Election does not exist'}), content_type='application/json', status=404)
+        if election.tally:
+            export = {}
+            electionExport = {}
+            electionExport['uuid'] = str(election.id)
+            electionExport['name'] = election.name
+            electionExport['CryptoParameters'] = json.loads(election.cryptoParameters.replace('\'','"'))
+            electionExport['ElectionPublicKey'] = election.publicKey
+            electionExport['questions'] = getQuestionsAux(election)
+            electionExport['aggregatedEncryptedTally'] = json.loads(election.aggregatedEncTally)
+            trusteesExport = {}
+            for t in Trustee.objects.filter(election=election):
+                if t.publicKeyShare:
+                    if 'pk' in json.loads(t.publicKeyShare.replace('\'','"')):
+                        trusteesExport[t.identifier] = {}
+                        trusteesExport[t.identifier]['KeyShare'] = json.loads(t.publicKeyShare.replace('\'','"'))
+                        trusteesExport[t.identifier]['KeyShare']["proof"]["e"] = t.keyShareProofRandom
+                        trusteesExport[t.identifier]['PartialDecryptions'] = json.loads(t.partialDecryption.replace('\'','"'))
+                        trusteesExport[t.identifier]['PartialDecryptionsRandom'] = json.loads(t.decryptionProofRandom.replace('\'','"'))
+            ballotsExport = {}
+            paperVoters = Voter.objects.filter(election=election,paperVoter=True)
+            paperVoterCredentials = paperVoters.values_list('publicCredential', flat=True)
+            numberOfEBallots = 0
+            for b in Ballot.objects.filter(election=election).exclude(publicCredential__in=paperVoterCredentials):
+                ballotsExport[b.publicCredential] = {}
+                ballotsExport[b.publicCredential]['ballotData'] = json.loads(b.ballot.replace('\'','"'))
+                ballotsExport[b.publicCredential]['SBT'] = b.SBT            
+            export['election'] = electionExport
+            export['trusteesData'] = trusteesExport
+            export['ballotExport'] = ballotsExport
+            response = HttpResponse(json.dumps(export), content_type='application/json')
+            response['Content-Disposition'] = 'attachment; filename=export.json'
+            return response
+        else:
+            return HttpResponse(json.dumps({'error':'Election doesn\'t have the results publishes yet!'}), content_type='application/json', status=404)
+    else:
+        return HttpResponseNotAllowed(['GET'])

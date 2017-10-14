@@ -41,6 +41,7 @@ urlpatterns = [
     url(r'^election/(?P<election_id>'+uuidRegEx+')/delete/$', views.deleteElection, name='deleteElection'),
     url(r'^trusteeElectionList/$', views.trusteeElectionList, name='trusteeList'),
     url(r'^election/(?P<election_id>'+uuidRegEx+')/trustee/$', views.trustee, name='trustee'),
+    url(r'^election/(?P<election_id>'+uuidRegEx+')/exportData/$', views.exportData, name='exportData'),
     url(r'^login/$', views.login, name='login'),
     url(r'^logout/$', auth_views.logout, name='logout',kwargs={'next_page': '/'}),
     url(r'^oauth/', include('social_django.urls', namespace='social')),

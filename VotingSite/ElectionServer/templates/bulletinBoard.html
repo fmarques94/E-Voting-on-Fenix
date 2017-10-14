@@ -80,6 +80,7 @@
 {% endfor %}
 {% endfor %}
 </table>
+<a class="ToggleButton" href="{% url 'exportData' election_id=election.id %}">Export Election Data</a>
 {% endif %}
 <br>
 {% if eligibleVoter and not election.tally %}
